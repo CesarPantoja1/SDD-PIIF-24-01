@@ -1,26 +1,4 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
-
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Editor directories and files
+# --- IDEAS Y CONFIGURACIONES DE EDITOR ---
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -30,3 +8,50 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# --- ENTORNOS Y SECRETOS ---
+# Bloquea el archivo principal y cualquier variante local
+.env
+.env.local
+.env.*.local
+*.local
+
+# --- DEPENDENCIAS Y CACHÉ ---
+node_modules/
+.buns/
+# Oculta la caché interna que genera Vite (se ve en tu captura bajo .vite\deps)
+.vite/
+
+# --- ARCHIVOS DE LOGS Y ERRORES ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- COMPILACIÓN Y PRODUCCIÓN ---
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.nitro/
+
+# --- ENRUTAMIENTO (TanStack Router) ---
+# Si usas la generación automática de rutas, a veces se ignora el árbol generado.
+# Descomenta la siguiente línea solo si prefieres que el árbol de rutas se genere siempre en build.
+# src/routeTree.gen.ts
+.tanstack/
+
+# --- INFRAESTRUCTURA LOCAL (Supabase / Cloudflare) ---
+# Evita subir credenciales temporales o contenedores locales de Supabase
+.supabase/
+.wrangler/
+.dev.vars
+
+# --- HERRAMIENTAS DE IA (Lovable) ---
+# ATENCIÓN: Si mantienes la sincronización activa con Lovable en la nube, 
+# se recomienda NO ignorar la carpeta completa para evitar conflictos de tracking.
+# Sin embargo, si quieres que no ensucie tu repositorio de Git remoto, descomenta la siguiente línea:
+# .lovable/
