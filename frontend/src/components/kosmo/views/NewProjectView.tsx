@@ -44,6 +44,7 @@ import {
 } from "@/components/kosmo/common";
 
 import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
+import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
 
 export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureAgents: () => void; onGenerate: (projectId: string) => void }) {
   const [name, setName] = useState("");
@@ -53,16 +54,32 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
   const createProject = useCreateProject();
   const projectCount = PROJECTS.length;
   const limitReached = projectCount >= MAX_PROJECTS;
+  const [pendingProjectId, setPendingProjectId] = useState<string | null>(null);
+  const [, setGenerated] = useGenerated(pendingProjectId || "");
+
   const canGenerate = !limitReached && name.trim().length > 1 && idea.trim().length > 5 && agents.configured && !createProject.isPending;
   const handleGenerate = async () => {
     if (!canGenerate) return;
     try {
       const id = await createProject.mutateAsync({ name: name.trim(), idea: idea.trim() });
-      onGenerate(id);
+      setPendingProjectId(id);
     } catch (e: any) {
       alert(e?.message ?? "Error creando proyecto");
     }
   };
+
+  const handleModalDone = async () => {
+    if (!pendingProjectId) return;
+    try {
+      await setGenerated({ [docKey(null, "brief")]: true });
+      onGenerate(pendingProjectId);
+    } catch (e: any) {
+      alert(e?.message ?? "Error guardando progreso");
+    } finally {
+      setPendingProjectId(null);
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto px-10 py-8">
       <div className="max-w-3xl">
@@ -137,6 +154,14 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
           )}
         </Card>
       </div>
+      {pendingProjectId && (
+        <AgentWorkingModal
+          mode="generate"
+          toLabel="Descubrimiento"
+          onDone={handleModalDone}
+          onCancel={() => setPendingProjectId(null)}
+        />
+      )}
     </div>
   );
 }

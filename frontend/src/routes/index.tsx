@@ -147,7 +147,7 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
         <div className="flex-1 min-h-0 overflow-hidden">
           {view.kind === "home" && <HomeView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onNew={() => setView({ kind: "new-project" })} onOpenWorkspace={() => setView({ kind: "my-workspace" })} />}
           {view.kind === "my-workspace" && <MyWorkspaceView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onSettings={(id) => setView({ kind: "project-settings", projectId: id, tab: "General" })} onNew={() => setView({ kind: "new-project" })} />}
-          {view.kind === "new-project" && <NewProjectView onConfigureAgents={() => setView({ kind: "global-settings", tab: "Coding Agents" })} onGenerate={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief", autoStartBrief: true })} />}
+          {view.kind === "new-project" && <NewProjectView onConfigureAgents={() => setView({ kind: "global-settings", tab: "Coding Agents" })} onGenerate={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief", autoStartBrief: false })} />}
           {view.kind === "profile" && <ProfileView />}
           {view.kind === "global-settings" && <GlobalSettings tab={view.tab} onTab={(t) => setView({ kind: "global-settings", tab: t })} onOpenApiKeys={openApiKeys} />}
           {view.kind === "project-settings" && (
