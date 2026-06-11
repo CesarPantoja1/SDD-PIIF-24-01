@@ -47,6 +47,7 @@ import { DocOutline } from "@/components/kosmo/workspace/DocOutline";
 import { PhaseEditor, phaseInitialHtml } from "@/components/kosmo/workspace/PhaseEditor";
 import { VibeChat } from "@/components/kosmo/workspace/VibeChat";
 import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
+import { ApollonDesignEditor } from "@/components/kosmo/workspace/ApollonDesignEditor";
 import { CodeGenView } from "@/components/kosmo/workspace/CodeGenView";
 import { GitPanelModal } from "@/components/kosmo/modals/GitPanelModal";
 
@@ -207,6 +208,17 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   specId={slot.specId}
                   specName={slot.specName}
                   onGenerated={() => setGenerated({ [docKey(slot.specId, "code")]: true })}
+                />
+              ) : slot.doc === "design" ? (
+                <ApollonDesignEditor
+                  projectId={projectId}
+                  scopeKey={currentKey}
+                  specName={slot.specName}
+                  chatOpen={chatOpen}
+                  onToggleChat={onToggleChat}
+                  outlineOpen={outlineOpen}
+                  onToggleOutline={() => setOutlineOpen((v) => !v)}
+                  onRegenerate={() => startGenerate(slot, "regenerate")}
                 />
               ) : (
                 <PhaseEditor

@@ -100,9 +100,6 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
             <MessageSquare className="h-3.5 w-3.5" /> Chat IA
           </button>
           <div className="mx-1 h-5 w-px bg-slate-200" />
-          <button onClick={onRegenerate} title="Regenerar" className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100">
-            <Sparkles className="h-3.5 w-3.5 text-indigo-500" /> Regenerar
-          </button>
           <IconBtn title="Copiar" onClick={() => navigator.clipboard?.writeText(editorRef.current?.innerText || "")}><Copy className="h-4 w-4" /></IconBtn>
           <IconBtn title="Descargar"><Download className="h-4 w-4" /></IconBtn>
           <IconBtn title="Expandir"><Maximize2 className="h-4 w-4" /></IconBtn>
