@@ -13,8 +13,13 @@ export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) 
     queryKey: key,
     enabled: !!user,
     queryFn: async (): Promise<string> => {
-      const { data } = await supabase.from("prompts")
-        .select("content").eq("user_id", user!.id).eq("scope", scope).eq("slot", slot).maybeSingle();
+      const { data } = await supabase
+        .from("prompts")
+        .select("content")
+        .eq("user_id", user!.id)
+        .eq("scope", scope)
+        .eq("slot", slot)
+        .maybeSingle();
       return data?.content ?? DEFAULT_PROMPTS[slot];
     },
     initialData: DEFAULT_PROMPTS[slot],
@@ -22,10 +27,15 @@ export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) 
   const setContent = useCallback(async (next: string) => {
     qc.setQueryData(key, next);
     if (!user) return;
-    await supabase.from("prompts").upsert(
-      { user_id: user.id, scope, slot, content: next },
-      { onConflict: "user_id,scope,slot" } as any
-    );
+    const { data: existing } = await supabase
+      .from("prompts").select("id")
+      .eq("user_id", user.id).eq("scope", scope).eq("slot", slot)
+      .maybeSingle();
+    if (existing?.id) {
+      await supabase.from("prompts").update({ content: next }).eq("id", existing.id);
+    } else {
+      await supabase.from("prompts").insert({ user_id: user.id, scope, slot, content: next });
+    }
   }, [qc, user, scope, slot]);
   return [data ?? DEFAULT_PROMPTS[slot], setContent] as const;
 }

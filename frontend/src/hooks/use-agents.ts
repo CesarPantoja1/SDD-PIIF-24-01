@@ -17,7 +17,11 @@ export function useAgentPrefs() {
     queryKey: key,
     enabled: !!user,
     queryFn: async (): Promise<AgentsConfig> => {
-      const { data } = await supabase.from("agent_prefs").select("config").eq("user_id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("agent_prefs")
+        .select("config")
+        .eq("user_id", user!.id)
+        .maybeSingle();
       return merge(data?.config);
     },
     initialData: DEFAULT_AGENTS,
@@ -25,7 +29,9 @@ export function useAgentPrefs() {
   const setPrefs = useCallback(async (next: AgentsConfig) => {
     qc.setQueryData(key, next);
     if (!user) return;
-    await supabase.from("agent_prefs").upsert({ user_id: user.id, config: next as any });
+    await supabase
+      .from("agent_prefs")
+      .upsert({ user_id: user.id, config: next as any }, { onConflict: "user_id" } as any);
   }, [qc, user]);
   return [data ?? DEFAULT_AGENTS, setPrefs] as const;
 }
@@ -39,8 +45,12 @@ export function useProjectAgents(projectId: string) {
     queryKey: key,
     enabled: !!user && !!projectId,
     queryFn: async (): Promise<AgentsConfig> => {
-      const { data } = await supabase.from("projects").select("agents_config").eq("id", projectId).maybeSingle();
-      const cfg = data?.agents_config;
+      const { data } = await supabase
+        .from("projects")
+        .select("agents_config")
+        .eq("id", projectId)
+        .maybeSingle();
+      const cfg = data?.agents_config as any;
       if (!cfg || Object.keys(cfg).length === 0) return prefs;
       return merge(cfg);
     },

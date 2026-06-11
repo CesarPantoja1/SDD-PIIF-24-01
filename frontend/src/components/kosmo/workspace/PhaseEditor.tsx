@@ -30,7 +30,7 @@ import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
-import { MOCK_BRIEF_HTML, MOCK_REQUIREMENTS_HTML } from "@/lib/mock-data";
+import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
   useProjectSpecs, useVisibleProjects,
@@ -53,15 +53,18 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
 
   // Re-seed editor whenever the active doc/scope changes. Load saved content
   // from localStorage (per project + scope) if any, else use the template.
+  const [allSpecs] = useProjectSpecs(projectId);
+  const variantIdx = variantIndexFromSpecNames((allSpecs ?? []).map((s) => s.name));
+
   useEffect(() => {
     if (!editorRef.current) return;
     let html = "";
     try { html = localStorage.getItem(storageKey) ?? ""; } catch {}
-    if (!html) html = phaseInitialHtml(doc, specName);
+    if (!html) html = phaseInitialHtml(doc, specName, variantIdx);
     editorRef.current.innerHTML = html;
     seedRef.current = html;
     setDirty(false);
-  }, [storageKey, doc, specName]);
+  }, [storageKey, doc, specName, variantIdx]);
 
   const exec = (cmd: string, value?: string) => {
     editorRef.current?.focus();
@@ -150,13 +153,15 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
 }
 
 
-export function phaseInitialHtml(doc: DocKey, specName?: string | null) {
+export function phaseInitialHtml(doc: DocKey, specName?: string | null, variantIdx = 0) {
+  const variant = MOCK_VARIANTS[variantIdx] ?? MOCK_VARIANTS[0];
   if (doc === "brief") {
-    return MOCK_BRIEF_HTML;
+    return variant.briefHtml;
   }
   const spec = specName ?? "Spec";
   if (doc === "requirements") {
-    return MOCK_REQUIREMENTS_HTML;
+    const perSpec = specName ? variant.requirementsBySpec?.[specName] : undefined;
+    return perSpec ?? variant.requirementsHtml;
   }
   if (doc === "design") {
     return `
@@ -169,6 +174,7 @@ export function phaseInitialHtml(doc: DocKey, specName?: string | null) {
     <p><em>Contenido pendiente de generación.</em></p>
   `;
 }
+
 
 
 export function phaseDocName(p: string) {

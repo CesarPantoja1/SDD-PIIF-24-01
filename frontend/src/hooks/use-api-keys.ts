@@ -13,7 +13,11 @@ export function useApiKeys() {
     queryKey: key,
     enabled: !!user,
     queryFn: async (): Promise<ApiKeys> => {
-      const { data } = await supabase.from("api_keys").select("keys").eq("user_id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("api_keys")
+        .select("keys")
+        .eq("user_id", user!.id)
+        .maybeSingle();
       return { ...DEFAULT_KEYS, ...((data?.keys as Partial<ApiKeys>) ?? {}) };
     },
     initialData: DEFAULT_KEYS,
@@ -21,7 +25,9 @@ export function useApiKeys() {
   const setKeys = useCallback(async (next: ApiKeys) => {
     qc.setQueryData(key, next);
     if (!user) return;
-    await supabase.from("api_keys").upsert({ user_id: user.id, keys: next as any });
+    await supabase
+      .from("api_keys")
+      .upsert({ user_id: user.id, keys: next as any }, { onConflict: "user_id" } as any);
   }, [qc, user]);
   return [data ?? DEFAULT_KEYS, setKeys] as const;
 }

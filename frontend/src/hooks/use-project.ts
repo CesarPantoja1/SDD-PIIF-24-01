@@ -3,12 +3,12 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./use-auth";
 import type { ProjectMeta, SpecRef, ProjectStatus } from "@/lib/types";
-import { pickSeedSpec } from "@/lib/constants";
+import { pickSeedSpecs } from "@/lib/constants";
 
 type Row = {
   id: string; owner_id: string; name: string; description: string;
   status: string; tags: string[]; cost: number | string; tokens: number;
-  idea: string; agents_config: any; created_at: string; updated_at: string; deleted_at: string | null;
+  created_at: string; updated_at: string; deleted_at: string | null;
 };
 
 const rowToMeta = (r: Row, specsCount: number): ProjectMeta => ({
@@ -17,6 +17,7 @@ const rowToMeta = (r: Row, specsCount: number): ProjectMeta => ({
   updatedAt: r.updated_at, cost: Number(r.cost) || 0, tokens: r.tokens || 0,
   specsCount, tags: r.tags ?? [],
 });
+
 
 export function useProjectsRaw() {
   const { user } = useAuth();
@@ -34,10 +35,10 @@ export function useProjectsRaw() {
       const { data: specs } = await supabase
         .from("specs")
         .select("project_id")
-        .in("project_id", rows.map(r => r.id));
+        .in("project_id", rows.map((r: any) => r.id));
       const counts: Record<string, number> = {};
       (specs ?? []).forEach((s: any) => { counts[s.project_id] = (counts[s.project_id] ?? 0) + 1; });
-      return (rows as Row[]).map(r => rowToMeta(r, counts[r.id] ?? 0));
+      return (rows as unknown as Row[]).map(r => rowToMeta(r, counts[r.id] ?? 0));
     },
     initialData: [],
   });
@@ -52,7 +53,6 @@ export function useProjectDisplayName(p: ProjectMeta) {
   return p.name;
 }
 
-/** Obtiene un proyecto por id (devuelve placeholder mientras carga / no encontrado). */
 export function useProjectById(projectId: string): ProjectMeta {
   const projects = useVisibleProjects();
   return projects.find(p => p.id === projectId) ?? {
@@ -61,7 +61,6 @@ export function useProjectById(projectId: string): ProjectMeta {
   };
 }
 
-/** Specs como [value, setValue] — value se hidrata desde DB. setValue hace upsert masivo. */
 export function useProjectSpecs(projectId: string) {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -80,7 +79,6 @@ export function useProjectSpecs(projectId: string) {
   });
   const setSpecs = useCallback(async (next: SpecRef[]) => {
     qc.setQueryData(key, next);
-    // No supportamos editar specs masivamente desde UI por ahora; placeholder.
   }, [qc, projectId]);
   return [data ?? [], setSpecs] as const;
 }
@@ -88,8 +86,6 @@ export function useProjectSpecs(projectId: string) {
 export function useDeletedProjects() {
   const qc = useQueryClient();
   const { user } = useAuth();
-  // value: lista de ids "soft-deleted" (siempre vacía porque proyectos eliminados ya no se ven);
-  // setValue: soft-delete del nuevo id que aparezca en el array.
   const setDeleted = useCallback(async (next: string[]) => {
     if (!user) return;
     if (next.length === 0) return;
@@ -100,7 +96,7 @@ export function useDeletedProjects() {
   return [[] as string[], setDeleted] as const;
 }
 
-/** generated map: "brief" o "<specId>.<doc>" => boolean */
+/** generated map: "brief" o "<specId>.<doc>" => boolean (persistido en generated_phases) */
 export function useGenerated(projectId: string) {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -121,7 +117,9 @@ export function useGenerated(projectId: string) {
         const { data: existingSpecs } = await supabase.from("specs").select("id").eq("project_id", projectId).limit(1);
         if (existingSpecs && existingSpecs.length > 0) {
           map.brief = true;
-          const { data: existingBrief } = await supabase.from("generated_phases").select("id").eq("project_id", projectId).eq("doc_key", "brief").is("spec_id", null).limit(1);
+          const { data: existingBrief } = await supabase
+            .from("generated_phases").select("id")
+            .eq("project_id", projectId).eq("doc_key", "brief").is("spec_id", null).limit(1);
           if (existingBrief?.[0]?.id) {
             await supabase.from("generated_phases").update({ generated: true }).eq("id", existingBrief[0].id);
           } else {
@@ -134,8 +132,6 @@ export function useGenerated(projectId: string) {
     initialData: {},
   });
   const setGenerated = useCallback(async (next: Record<string, boolean>) => {
-    // Merge contra el cache real (no contra una closure stale), para que las
-    // fases ya generadas de otras specs no se pierdan al actualizar una nueva.
     const current = (qc.getQueryData(key) as Record<string, boolean>) ?? {};
     const merged = { ...current, ...next };
     const newlyTrue = Object.entries(next).filter(([k, v]) => v && !current[k]);
@@ -145,13 +141,10 @@ export function useGenerated(projectId: string) {
       for (const [k] of newlyTrue) {
         const [a, b] = k.split(".");
         const spec_id = b ? a : null;
-        const doc_key = b ?? a;
+        const doc = b ?? a;
         let existingQuery = supabase
-          .from("generated_phases")
-          .select("id")
-          .eq("project_id", projectId)
-          .eq("doc_key", doc_key)
-          .limit(1);
+          .from("generated_phases").select("id")
+          .eq("project_id", projectId).eq("doc_key", doc).limit(1);
         existingQuery = spec_id ? existingQuery.eq("spec_id", spec_id) : existingQuery.is("spec_id", null);
         const { data: existing, error: findError } = await existingQuery;
         if (findError) throw findError;
@@ -160,20 +153,21 @@ export function useGenerated(projectId: string) {
           const { error } = await supabase.from("generated_phases").update({ generated: true }).eq("id", existing[0].id);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from("generated_phases").insert({ project_id: projectId, spec_id, doc_key, generated: true });
-          if (error && error.code !== "23505") throw error;
+          const { error } = await supabase.from("generated_phases").insert({ project_id: projectId, spec_id, doc_key: doc, generated: true });
+          if (error && (error as any).code !== "23505") throw error;
         }
 
-        if (doc_key === "brief" && !spec_id) {
+        if (doc === "brief" && !spec_id) {
           const { data: existingSpecs, error: specsError } = await supabase.from("specs").select("id").eq("project_id", projectId).limit(1);
           if (specsError) throw specsError;
           if (!existingSpecs || existingSpecs.length === 0) {
             const { data: usedSpecs } = await supabase.from("specs").select("name");
-            const seed = pickSeedSpec(projectId, (usedSpecs ?? []).map((spec: any) => spec.name));
-            const { error } = await supabase.from("specs").insert([
-              { project_id: projectId, name: seed.name, position: 0 },
-            ]);
+            const seeds = pickSeedSpecs(projectId, (usedSpecs ?? []).map((spec: any) => spec.name));
+            const rows = seeds.map((s, i) => ({ project_id: projectId, name: s.name, position: i }));
+            const { error } = await supabase.from("specs").insert(rows);
             if (error) throw error;
+            await qc.invalidateQueries({ queryKey: ["specs", projectId] });
+            await qc.invalidateQueries({ queryKey: ["projects", user?.id] });
             await qc.invalidateQueries({ queryKey: ["specs", projectId] });
             await qc.invalidateQueries({ queryKey: ["projects", user?.id] });
           }
@@ -185,9 +179,9 @@ export function useGenerated(projectId: string) {
     }
   }, [qc, projectId, user?.id]);
   return [data ?? {}, setGenerated, { isLoaded: isFetched }] as const;
+
 }
 
-/** Crea un nuevo proyecto y devuelve su id. */
 export function useCreateProject() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -195,7 +189,7 @@ export function useCreateProject() {
     mutationFn: async ({ name, idea }: { name: string; idea: string }) => {
       if (!user) throw new Error("not authenticated");
       const { data, error } = await supabase.from("projects")
-        .insert({ owner_id: user.id, name, description: idea, idea })
+        .insert({ owner_id: user.id, name, description: idea })
         .select("id").single();
       if (error) throw error;
       return data.id as string;
@@ -204,7 +198,6 @@ export function useCreateProject() {
   });
 }
 
-/** Actualiza campos generales del proyecto. */
 export function useUpdateProject(projectId: string) {
   const qc = useQueryClient();
   const { user } = useAuth();

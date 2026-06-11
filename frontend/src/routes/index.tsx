@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import {
   Home, Briefcase, Settings, LogOut, User, Sparkles, Plus,
@@ -33,12 +33,11 @@ function KosmoApp() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
-  }, [user, loading, navigate]);
-
-  if (loading || !user) {
+  if (loading) {
     return <div className="grid h-screen place-items-center text-sm text-muted-foreground">Cargando…</div>;
+  }
+  if (!user) {
+    return <Navigate to="/auth" />;
   }
   return <KosmoAppInner onSignOut={async () => { await signOut(); navigate({ to: "/auth" }); }} />;
 }

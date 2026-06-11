@@ -29,7 +29,7 @@ import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
 import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
-import { MOCK_PROJECT_NAME, MOCK_PROJECT_DESCRIPTION } from "@/lib/mock-data";
+import { MOCK_VARIANTS } from "@/lib/mock-data";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
@@ -48,10 +48,14 @@ import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerI
 import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
 
 export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureAgents: () => void; onGenerate: (projectId: string) => void }) {
-  const [name, setName] = useState(MOCK_PROJECT_NAME);
-  const [idea, setIdea] = useState(MOCK_PROJECT_DESCRIPTION);
-  const [agents] = useAgentPrefs();
   const PROJECTS = useVisibleProjects();
+  // Pre-rellena con la variante libre según los proyectos ya creados
+  // Rota la variante por defecto según el número de proyectos existentes
+  const defaultVariantIdx = PROJECTS.length % MOCK_VARIANTS.length;
+  const defaultVariant = MOCK_VARIANTS[defaultVariantIdx];
+  const [name, setName] = useState(defaultVariant.name);
+  const [idea, setIdea] = useState(defaultVariant.description);
+  const [agents] = useAgentPrefs();
   const createProject = useCreateProject();
   const projectCount = PROJECTS.length;
   const limitReached = projectCount >= MAX_PROJECTS;

@@ -5,7 +5,8 @@ import {
 } from "lucide-react";
 import type { DocKey } from "@/lib/types";
 import { IconBtn, Badge } from "@/components/kosmo/common";
-import { MOCK_DESIGN_JSON } from "@/lib/mock-data";
+import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
+import { useProjectSpecs } from "@/hooks/use-project";
 
 /**
  * ApollonDesignEditor — replaces the markdown PhaseEditor for the "design" phase.
@@ -42,6 +43,12 @@ export function ApollonDesignEditor({
   const [dirty, setDirty] = useState(false);
 
   const storageKey = `kosmo.apollon.${projectId}.${scopeKey}`;
+  const [allSpecs] = useProjectSpecs(projectId);
+  const variantIdx = variantIndexFromSpecNames((allSpecs ?? []).map((s) => s.name));
+  const variant = MOCK_VARIANTS[variantIdx] ?? MOCK_VARIANTS[0];
+  const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
+  const designJson = perSpecDesign ?? variant.designJson;
+
 
   // Mount / unmount the Apollon editor
   useEffect(() => {
@@ -70,7 +77,7 @@ export function ApollonDesignEditor({
       // If there's no model, or if the model is practically empty (no nodes),
       // force the use of the hardcoded design JSON.
       if (!savedModel || !Array.isArray(savedModel.nodes) || savedModel.nodes.length === 0) {
-        savedModel = MOCK_DESIGN_JSON;
+        savedModel = designJson;
       }
 
       const options: Record<string, unknown> = {
@@ -103,7 +110,7 @@ export function ApollonDesignEditor({
       editorRef.current?.destroy();
       editorRef.current = null;
     };
-  }, [storageKey]);
+  }, [storageKey, designJson]);
 
   // Manual save (explicit click — model is already auto-persisted, this is UX feedback)
   const onSave = useCallback(() => {

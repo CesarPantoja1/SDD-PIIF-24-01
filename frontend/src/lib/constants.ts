@@ -75,18 +75,17 @@ export const ALL_AGENT_SLOTS: AgentSlotKey[] = [
   "tasks.creator", "tasks.reviewer",
 ];
 
-/** Tres plantillas base. Cada proyecto recibe UNA spec inicial desde una de estas plantillas. */
-export const SEED_SPEC_TEMPLATES: { name: string }[] = [
-  { name: MOCK_SPEC_NAME },
-];
-export function pickSeedSpec(projectId?: string, usedNames: string[] = []): { name: string } {
-  const used = new Set(usedNames);
-  const firstUnused = SEED_SPEC_TEMPLATES.find((template) => !used.has(template.name));
-  if (firstUnused) return firstUnused;
-  if (!projectId) return SEED_SPEC_TEMPLATES[Math.floor(Math.random() * SEED_SPEC_TEMPLATES.length)];
-  const hash = Array.from(projectId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return SEED_SPEC_TEMPLATES[hash % SEED_SPEC_TEMPLATES.length];
+/** Plantillas base. Cada proyecto recibe N specs según la variante asignada. */
+export { MOCK_VARIANTS, pickVariantForNewProject, variantIndexFromSpecNames } from "./mock-data";
+
+import { MOCK_VARIANTS, pickVariantForNewProject } from "./mock-data";
+
+/** Devuelve los nombres de specs a sembrar para un nuevo proyecto, según la variante libre. */
+export function pickSeedSpecs(_projectId?: string, usedNames: string[] = []): { name: string }[] {
+  const idx = pickVariantForNewProject(usedNames);
+  return MOCK_VARIANTS[idx].specNames.map((name) => ({ name }));
 }
+
 
 /** Templates legacy (vacíos, ya no se siembran datos en frontend). */
 export const DEFAULT_SPECS: Record<string, SpecRef[]> = {};

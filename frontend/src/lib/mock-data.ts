@@ -584,3 +584,478 @@ export const MOCK_DESIGN_JSON: Record<string, any> = {
   ],
   "assessments": {}
 };
+
+/* ================================================================
+ * VARIANTE 2 — Plataforma de intercambio de libros
+ * 2 specs, contenidos distintos a la variante 1.
+ * ================================================================ */
+
+export const MOCK2_PROJECT_NAME = "Plataforma de intercambio de libros";
+
+export const MOCK2_PROJECT_DESCRIPTION =
+  "Plataforma comunitaria para que lectores descubran, presten e intercambien libros físicos de forma segura cerca de su zona";
+
+export const MOCK2_SPEC_NAMES = [
+  "Catálogo y descubrimiento",
+  "Préstamos e intercambios",
+];
+
+export const MOCK2_BRIEF_HTML = `
+<h1>LibroSwap</h1>
+
+<h2>Resumen Ejecutivo</h2>
+<p>LibroSwap es una plataforma comunitaria que conecta lectores para descubrir, prestar e intercambiar libros físicos en su zona. Resuelve la fricción de coordinar intercambios y encontrar títulos disponibles cerca, fomentando la economía circular del libro.</p>
+
+<h2>Problema</h2>
+<p>Los lectores tienen bibliotecas personales infrautilizadas y al mismo tiempo gastan en libros que solo leerán una vez. No existe una forma sencilla de saber qué títulos están disponibles cerca, coordinar la entrega y construir confianza entre desconocidos. Las soluciones actuales (grupos de WhatsApp, foros) no ofrecen catálogo, ni reputación, ni seguimiento de préstamos.</p>
+
+<h2>Público Objetivo</h2>
+<ul>
+  <li><strong>Lectores recurrentes</strong>: personas que leen más de un libro al mes y prefieren formato físico.</li>
+  <li><strong>Clubes de lectura</strong>: grupos que necesitan rotar varios ejemplares del mismo título.</li>
+  <li><strong>Bibliotecas comunitarias</strong>: colectivos vecinales que gestionan estanterías abiertas.</li>
+</ul>
+
+<h2>Propuesta de Valor</h2>
+<p>LibroSwap combina un catálogo geolocalizado, un sistema de reputación basado en intercambios completados y un flujo guiado de préstamo con devolución programada. A diferencia de un grupo de mensajería, todo queda registrado y verificable.</p>
+
+<h2>Capacidades Clave</h2>
+<ol>
+  <li><strong>Catálogo Personal</strong>: cada usuario registra su biblioteca con título, autor, estado y disponibilidad.</li>
+  <li><strong>Descubrimiento por Cercanía</strong>: búsqueda de libros disponibles dentro de un radio configurable.</li>
+  <li><strong>Solicitud de Préstamo</strong>: flujo guiado para solicitar, aceptar, entregar y devolver un libro.</li>
+  <li><strong>Reputación</strong>: puntuación por intercambios completados y reseñas mutuas.</li>
+  <li><strong>Recordatorios de Devolución</strong>: avisos automáticos antes de la fecha pactada.</li>
+</ol>
+
+<h2>Casos de Uso Principales</h2>
+<ul>
+  <li>Cuando un <strong>lector</strong> termina un libro y quiere liberar espacio, lo marca como disponible y otros vecinos pueden solicitarlo.</li>
+  <li>Cuando un <strong>club de lectura</strong> elige un título del mes, sus miembros buscan ejemplares cercanos para no tener que comprar.</li>
+</ul>
+
+<h2>Alcance</h2>
+
+<h3>Dentro del Alcance</h3>
+<ul>
+  <li>Catálogo personal con datos básicos del libro.</li>
+  <li>Búsqueda geolocalizada y filtros por género/autor.</li>
+  <li>Flujo de solicitud, entrega y devolución de préstamos.</li>
+  <li>Sistema de reputación con reseñas mutuas.</li>
+</ul>
+
+<h3>Fuera del Alcance</h3>
+<ul>
+  <li>Venta de libros nuevos o usados con pago integrado.</li>
+  <li>Lectura digital o ebooks.</li>
+  <li>Envíos por mensajería de terceros.</li>
+</ul>
+
+<h3>Supuestos y Dependencias</h3>
+<ul>
+  <li>Los usuarios coordinan la entrega en persona en puntos públicos.</li>
+  <li>Se usa un servicio externo de geocodificación para la búsqueda por cercanía.</li>
+</ul>
+
+<h2>Métricas de Éxito</h2>
+<ul>
+  <li><strong>Tasa de devolución</strong>: 95% de los préstamos devueltos en la fecha pactada en los primeros 6 meses.</li>
+  <li><strong>Activación</strong>: 3.000 lectores con al menos un libro en su catálogo durante el primer año.</li>
+  <li><strong>Intercambios completados</strong>: 8.000 préstamos exitosos en el primer año.</li>
+</ul>
+
+<h2>Restricciones</h2>
+<ul>
+  <li>Cumplimiento de privacidad para datos de geolocalización del usuario.</li>
+  <li>Presupuesto limitado para campañas locales de adquisición.</li>
+</ul>
+`;
+
+export const MOCK2_REQUIREMENTS_BY_SPEC: Record<string, string> = {
+  "Catálogo y descubrimiento": `
+<h1>Documento de Requisitos · Catálogo y descubrimiento</h1>
+
+<h2>Introducción</h2>
+<p>Esta spec cubre cómo cada lector mantiene su biblioteca personal en LibroSwap y cómo el resto de la comunidad descubre los títulos disponibles cerca, respetando la privacidad de la ubicación.</p>
+
+<h2>Contexto de Alcance</h2>
+<ul>
+  <li><strong>Dentro del alcance</strong>: alta y edición del catálogo personal, búsqueda geolocalizada con filtros, controles de privacidad de ubicación.</li>
+  <li><strong>Fuera del alcance</strong>: solicitud de préstamo, devoluciones, reputación, notificaciones (cubiertos por la spec "Préstamos e intercambios").</li>
+</ul>
+
+<h2>Requisitos</h2>
+
+<h3>Requisito 1: Catálogo Personal</h3>
+<p><strong>Objetivo:</strong> Como lector, quiero registrar mis libros disponibles, para que otros usuarios cercanos puedan encontrarlos.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When el lector agrega un libro, el sistema shall almacenar título, autor, estado y disponibilidad.</li>
+  <li>If el lector marca un libro como prestado, then el sistema shall ocultarlo de los resultados de búsqueda.</li>
+  <li>While un libro esté en el catálogo, el sistema shall permitir editar o eliminar su entrada.</li>
+  <li>Where el lector adjunte una foto de portada, el sistema shall almacenarla con un peso máximo de 2 MB.</li>
+</ol>
+
+<h3>Requisito 2: Búsqueda por Cercanía</h3>
+<p><strong>Objetivo:</strong> Como lector, quiero buscar libros disponibles cerca de mí, para minimizar el desplazamiento.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When el lector realiza una búsqueda, el sistema shall devolver libros disponibles dentro del radio configurado.</li>
+  <li>If el lector cambia el radio de búsqueda, then el sistema shall actualizar los resultados sin recargar la página.</li>
+  <li>Where el lector filtra por género o autor, el sistema shall combinar el filtro con el criterio de cercanía.</li>
+  <li>When no haya resultados, el sistema shall sugerir ampliar el radio o guardar una alerta.</li>
+</ol>
+
+<h3>Requisito 3: Privacidad de Ubicación</h3>
+<p><strong>Objetivo:</strong> Como lector, quiero proteger mi ubicación exacta, para sentirme seguro al usar la plataforma.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When un usuario aparece en los resultados, el sistema shall mostrar solo el barrio aproximado, nunca la dirección exacta.</li>
+  <li>If un usuario desactiva la geolocalización, then el sistema shall excluir su catálogo de las búsquedas por cercanía.</li>
+  <li>While la cuenta esté activa, el sistema shall permitir al usuario revisar y borrar su historial de ubicaciones.</li>
+</ol>
+`,
+  "Préstamos e intercambios": `
+<h1>Documento de Requisitos · Préstamos e intercambios</h1>
+
+<h2>Introducción</h2>
+<p>Esta spec describe el ciclo de vida de un préstamo en LibroSwap: solicitud, aceptación, devolución, reputación posterior y notificaciones que mantienen informados a ambos lados del intercambio.</p>
+
+<h2>Contexto de Alcance</h2>
+<ul>
+  <li><strong>Dentro del alcance</strong>: solicitud de préstamo, gestión de devoluciones, reseñas mutuas, sistema de notificaciones.</li>
+  <li><strong>Fuera del alcance</strong>: alta del catálogo y búsqueda (cubiertos por la spec "Catálogo y descubrimiento"), pagos o envíos por mensajería.</li>
+</ul>
+
+<h2>Requisitos</h2>
+
+<h3>Requisito 1: Solicitud de Préstamo</h3>
+<p><strong>Objetivo:</strong> Como lector, quiero solicitar un libro disponible, para coordinar la entrega con el propietario.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When el lector envía una solicitud, el sistema shall notificar al propietario y registrar la petición.</li>
+  <li>If el propietario rechaza la solicitud, then el sistema shall liberar el libro y notificar al solicitante.</li>
+  <li>While la solicitud esté pendiente, el sistema shall impedir nuevas solicitudes sobre el mismo ejemplar.</li>
+  <li>If la solicitud no recibe respuesta en 48 h, then el sistema shall expirarla automáticamente.</li>
+</ol>
+
+<h3>Requisito 2: Gestión de Devoluciones</h3>
+<p><strong>Objetivo:</strong> Como propietario, quiero pactar y supervisar la fecha de devolución, para mantener mi catálogo organizado.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When un préstamo se acepta, el sistema shall registrar la fecha de devolución acordada.</li>
+  <li>If la fecha de devolución está próxima, then el sistema shall enviar un recordatorio al solicitante.</li>
+  <li>While el préstamo esté activo, el sistema shall permitir a ambas partes confirmar la devolución.</li>
+  <li>If la devolución se retrasa más de 7 días, then el sistema shall marcar al solicitante como moroso temporal.</li>
+</ol>
+
+<h3>Requisito 3: Reputación</h3>
+<p><strong>Objetivo:</strong> Como lector, quiero ver la reputación de un usuario, para decidir con confianza un intercambio.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When un préstamo finaliza, el sistema shall solicitar una reseña mutua a ambas partes.</li>
+  <li>If un usuario acumula reseñas negativas reiteradas, then el sistema shall ocultar su catálogo de las búsquedas.</li>
+  <li>Where un usuario consulta otro perfil, el sistema shall mostrar la puntuación y las últimas reseñas.</li>
+</ol>
+
+<h3>Requisito 4: Notificaciones</h3>
+<p><strong>Objetivo:</strong> Como usuario, quiero recibir avisos de los eventos relevantes del préstamo, para no perder oportunidades ni plazos.</p>
+<h4>Criterios de Aceptación</h4>
+<ol>
+  <li>When alguien solicita un libro propio, el sistema shall notificar al propietario por push o email.</li>
+  <li>If la solicitud es aceptada o rechazada, then el sistema shall notificar al solicitante.</li>
+  <li>While un préstamo esté activo, el sistema shall enviar recordatorios 2 días antes de la devolución.</li>
+</ol>
+`,
+};
+
+// Compat: documento agregado (no usado per-spec pero exportado para retro-compat).
+export const MOCK2_REQUIREMENTS_HTML = MOCK2_REQUIREMENTS_BY_SPEC["Catálogo y descubrimiento"];
+
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const MOCK2_DESIGN_BY_SPEC: Record<string, Record<string, any>> = {
+  "Catálogo y descubrimiento": {
+    "id": "ca7a106f-de5c-4b00-9111-1aa1aa1aa1aa",
+    "version": "4.0.0",
+    "title": "Class Diagram",
+    "type": "ClassDiagram",
+    "nodes": [
+      {
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "width": 300, "height": 160, "type": "class",
+        "position": { "x": -400, "y": 0 },
+        "data": {
+          "name": "Lector",
+          "methods": [
+            { "id": "a1111111-1111-4111-8111-111111111112", "name": "+ publicarLibro(libro: Libro): bool" }
+          ],
+          "attributes": [
+            { "id": "a1111111-1111-4111-8111-111111111113", "name": "+ nombre: str" },
+            { "id": "a1111111-1111-4111-8111-111111111114", "name": "+ email: str" }
+          ]
+        },
+        "measured": { "width": 300, "height": 160 }
+      },
+      {
+        "id": "b2222222-2222-4222-8222-222222222222",
+        "width": 320, "height": 180, "type": "class",
+        "position": { "x": 0, "y": 0 },
+        "data": {
+          "name": "Libro",
+          "methods": [
+            { "id": "b2222222-2222-4222-8222-222222222223", "name": "+ marcarDisponible(estado: EstadoLibro): bool" }
+          ],
+          "attributes": [
+            { "id": "b2222222-2222-4222-8222-222222222224", "name": "+ titulo: str" },
+            { "id": "b2222222-2222-4222-8222-222222222225", "name": "+ autor: str" },
+            { "id": "b2222222-2222-4222-8222-222222222226", "name": "+ genero: str" },
+            { "id": "b2222222-2222-4222-8222-222222222227", "name": "+ estado: EstadoLibro" }
+          ]
+        },
+        "measured": { "width": 320, "height": 180 }
+      },
+      {
+        "id": "e5555555-5555-4555-8555-555555555555",
+        "width": 280, "height": 150, "type": "class",
+        "position": { "x": -400, "y": 280 },
+        "data": {
+          "name": "Ubicacion",
+          "methods": [
+            { "id": "e5555555-5555-4555-8555-555555555558", "name": "+ enRadio(km: float): bool" }
+          ],
+          "attributes": [
+            { "id": "e5555555-5555-4555-8555-555555555556", "name": "+ barrio: str" },
+            { "id": "e5555555-5555-4555-8555-555555555557", "name": "+ radioKm: float" }
+          ]
+        },
+        "measured": { "width": 280, "height": 150 }
+      },
+      {
+        "id": "f6666666-6666-4666-8666-666666666666",
+        "width": 220, "height": 150, "type": "class",
+        "position": { "x": 0, "y": 280 },
+        "data": {
+          "name": "EstadoLibro",
+          "stereotype": "Enumeration",
+          "methods": [],
+          "attributes": [
+            { "id": "f6666666-6666-4666-8666-666666666667", "name": "DISPONIBLE" },
+            { "id": "f6666666-6666-4666-8666-666666666668", "name": "PRESTADO" },
+            { "id": "f6666666-6666-4666-8666-666666666669", "name": "RESERVADO" }
+          ]
+        },
+        "measured": { "width": 220, "height": 150 }
+      }
+    ],
+    "edges": [
+      {
+        "id": "11111111-aaaa-4aaa-8aaa-111111111111",
+        "source": "a1111111-1111-4111-8111-111111111111",
+        "target": "b2222222-2222-4222-8222-222222222222",
+        "type": "ClassBidirectional",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "0 .. *", "points": [] }
+      },
+      {
+        "id": "22222222-aaaa-4aaa-8aaa-222222222222",
+        "source": "b2222222-2222-4222-8222-222222222222",
+        "target": "f6666666-6666-4666-8666-666666666666",
+        "type": "ClassBidirectional",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "1 .. 1", "points": [] }
+      },
+      {
+        "id": "33333333-aaaa-4aaa-8aaa-333333333333",
+        "source": "a1111111-1111-4111-8111-111111111111",
+        "target": "e5555555-5555-4555-8555-555555555555",
+        "type": "ClassBidirectional",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "1 .. 1", "points": [] }
+      }
+    ],
+    "assessments": {}
+  },
+  "Préstamos e intercambios": {
+    "id": "9b2cc3e5-1d2f-4b80-8c4d-2c3d4e5f6a7b",
+    "version": "4.0.0",
+    "title": "Class Diagram",
+    "type": "ClassDiagram",
+    "nodes": [
+      {
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "width": 300, "height": 160, "type": "class",
+        "position": { "x": -500, "y": 0 },
+        "data": {
+          "name": "Lector",
+          "methods": [
+            { "id": "a1111111-1111-4111-8111-111111111112", "name": "+ solicitarPrestamo(libro: Libro): bool" }
+          ],
+          "attributes": [
+            { "id": "a1111111-1111-4111-8111-111111111113", "name": "+ nombre: str" },
+            { "id": "a1111111-1111-4111-8111-111111111115", "name": "+ reputacion: float" }
+          ]
+        },
+        "measured": { "width": 300, "height": 160 }
+      },
+      {
+        "id": "c3333333-3333-4333-8333-333333333333",
+        "width": 340, "height": 180, "type": "class",
+        "position": { "x": -100, "y": 0 },
+        "data": {
+          "name": "Prestamo",
+          "methods": [
+            { "id": "c3333333-3333-4333-8333-333333333334", "name": "+ aceptar(): bool" },
+            { "id": "c3333333-3333-4333-8333-333333333338", "name": "+ registrarDevolucion(): bool" }
+          ],
+          "attributes": [
+            { "id": "c3333333-3333-4333-8333-333333333335", "name": "+ fechaInicio: datetime" },
+            { "id": "c3333333-3333-4333-8333-333333333336", "name": "+ fechaDevolucion: datetime" },
+            { "id": "c3333333-3333-4333-8333-333333333337", "name": "+ estado: EstadoPrestamo" }
+          ]
+        },
+        "measured": { "width": 340, "height": 180 }
+      },
+      {
+        "id": "d4444444-4444-4444-8444-444444444444",
+        "width": 280, "height": 160, "type": "class",
+        "position": { "x": -500, "y": 280 },
+        "data": {
+          "name": "Resena",
+          "methods": [],
+          "attributes": [
+            { "id": "d4444444-4444-4444-8444-444444444445", "name": "+ puntuacion: int" },
+            { "id": "d4444444-4444-4444-8444-444444444446", "name": "+ comentario: str" },
+            { "id": "d4444444-4444-4444-8444-444444444447", "name": "+ fecha: datetime" }
+          ]
+        },
+        "measured": { "width": 280, "height": 160 }
+      },
+      {
+        "id": "07777777-7777-4777-8777-777777777777",
+        "width": 240, "height": 160, "type": "class",
+        "position": { "x": -100, "y": 280 },
+        "data": {
+          "name": "EstadoPrestamo",
+          "stereotype": "Enumeration",
+          "methods": [],
+          "attributes": [
+            { "id": "07777777-7777-4777-8777-777777777778", "name": "PENDIENTE" },
+            { "id": "07777777-7777-4777-8777-777777777779", "name": "ACTIVO" },
+            { "id": "07777777-7777-4777-8777-77777777777a", "name": "DEVUELTO" },
+            { "id": "07777777-7777-4777-8777-77777777777b", "name": "VENCIDO" }
+          ]
+        },
+        "measured": { "width": 240, "height": 160 }
+      }
+    ],
+    "edges": [
+      {
+        "id": "11111111-bbbb-4bbb-8bbb-111111111111",
+        "source": "a1111111-1111-4111-8111-111111111111",
+        "target": "c3333333-3333-4333-8333-333333333333",
+        "type": "ClassBidirectional",
+        "sourceHandle": "right",
+        "targetHandle": "left",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "0 .. *", "points": [] }
+      },
+      {
+        "id": "22222222-bbbb-4bbb-8bbb-222222222222",
+        "source": "c3333333-3333-4333-8333-333333333333",
+        "target": "07777777-7777-4777-8777-777777777777",
+        "type": "ClassBidirectional",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "1 .. 1", "points": [] }
+      },
+      {
+        "id": "33333333-bbbb-4bbb-8bbb-333333333333",
+        "source": "c3333333-3333-4333-8333-333333333333",
+        "target": "d4444444-4444-4444-8444-444444444444",
+        "type": "ClassBidirectional",
+        "sourceHandle": "bottom-left",
+        "targetHandle": "top-right",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "0 .. 2", "points": [] }
+      },
+      {
+        "id": "44444444-bbbb-4bbb-8bbb-444444444444",
+        "source": "a1111111-1111-4111-8111-111111111111",
+        "target": "d4444444-4444-4444-8444-444444444444",
+        "type": "ClassBidirectional",
+        "sourceHandle": "bottom",
+        "targetHandle": "top",
+        "data": { "sourceMultiplicity": "1 .. 1", "targetMultiplicity": "0 .. *", "points": [] }
+      }
+    ],
+    "assessments": {}
+  }
+};
+
+// Compat: design agregado por defecto = primera spec.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const MOCK2_DESIGN_JSON: Record<string, any> = MOCK2_DESIGN_BY_SPEC["Catálogo y descubrimiento"];
+
+
+/* ================================================================
+ * MOCK_VARIANTS — registro central de variantes
+ * ================================================================ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type MockVariant = {
+  name: string;
+  description: string;
+  specNames: string[];
+  briefHtml: string;
+  requirementsHtml: string;
+  /** Optional per-spec requirements overrides, keyed by spec name. */
+  requirementsBySpec?: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  designJson: Record<string, any>;
+  /** Optional per-spec Apollon design overrides, keyed by spec name. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  designBySpec?: Record<string, Record<string, any>>;
+};
+
+export const MOCK_VARIANTS: MockVariant[] = [
+  {
+    name: MOCK_PROJECT_NAME,
+    description: MOCK_PROJECT_DESCRIPTION,
+    specNames: [MOCK_SPEC_NAME],
+    briefHtml: MOCK_BRIEF_HTML,
+    requirementsHtml: MOCK_REQUIREMENTS_HTML,
+    designJson: MOCK_DESIGN_JSON,
+  },
+  {
+    name: MOCK2_PROJECT_NAME,
+    description: MOCK2_PROJECT_DESCRIPTION,
+    specNames: MOCK2_SPEC_NAMES,
+    briefHtml: MOCK2_BRIEF_HTML,
+    requirementsHtml: MOCK2_REQUIREMENTS_HTML,
+    requirementsBySpec: MOCK2_REQUIREMENTS_BY_SPEC,
+    designJson: MOCK2_DESIGN_JSON,
+    designBySpec: MOCK2_DESIGN_BY_SPEC,
+  },
+];
+
+
+/** Encuentra el índice de variante cuyo spec coincide con alguno de los nombres dados. */
+export function variantIndexFromSpecNames(specNames: string[]): number {
+  for (let i = 0; i < MOCK_VARIANTS.length; i++) {
+    const names = MOCK_VARIANTS[i].specNames;
+    if (specNames.some((n) => names.includes(n))) return i;
+  }
+  return 0;
+}
+
+/** Elige la variante a usar para un nuevo proyecto: primera cuyos spec names no estén en uso. */
+export function pickVariantForNewProject(usedSpecNames: string[]): number {
+  const used = new Set(usedSpecNames);
+  for (let i = 0; i < MOCK_VARIANTS.length; i++) {
+    const claimed = MOCK_VARIANTS[i].specNames.some((n) => used.has(n));
+    if (!claimed) return i;
+  }
+  return 0;
+}
