@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import type { DocKey } from "@/lib/types";
 import { IconBtn, Badge } from "@/components/kosmo/common";
+import { MOCK_DESIGN_JSON } from "@/lib/mock-data";
 
 /**
  * ApollonDesignEditor — replaces the markdown PhaseEditor for the "design" phase.
@@ -13,6 +14,7 @@ import { IconBtn, Badge } from "@/components/kosmo/common";
  * React 18 internally) and mounts an interactive class-diagram canvas.
  *
  * The diagram model (JSON) is persisted in localStorage per project+scope.
+ * When no saved model exists, it loads the hardcoded MOCK_DESIGN_JSON.
  */
 export function ApollonDesignEditor({
   projectId,
@@ -54,13 +56,21 @@ export function ApollonDesignEditor({
 
       const { ApollonEditor, UMLDiagramType, ApollonMode, Locale } = apollon;
 
-      // Restore previous model from localStorage (if any)
-      let savedModel: object | undefined;
+      // Restore previous model from localStorage (if any),
+      // falling back to the hardcoded mock design JSON.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let savedModel: any;
       try {
         const raw = localStorage.getItem(storageKey);
         if (raw) savedModel = JSON.parse(raw);
       } catch {
         /* ignore corrupt data */
+      }
+      
+      // If there's no model, or if the model is practically empty (no nodes),
+      // force the use of the hardcoded design JSON.
+      if (!savedModel || !Array.isArray(savedModel.nodes) || savedModel.nodes.length === 0) {
+        savedModel = MOCK_DESIGN_JSON;
       }
 
       const options: Record<string, unknown> = {

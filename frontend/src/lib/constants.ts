@@ -5,6 +5,7 @@ import type {
   AgentSlotKey, AgentSpec, AgentsConfig, ApiKeys, DocKey,
   ProjectMeta, ProviderKey, SpecRef, StageAgents, StageKey,
 } from "./types";
+import { MOCK_PROMPTS, MOCK_SPEC_NAME } from "./mock-data";
 
 export const MAX_PROJECTS = 3;
 
@@ -56,12 +57,12 @@ export const AGENT_SLOT_LABELS: Record<AgentSlotKey, string> = {
 
 export const DEFAULT_PROMPTS: Record<AgentSlotKey, string> = {
   clarifier: `# Agente Clarificador\n\nEres el primer agente en la cadena SDD. Tu rol es **refinar el prompt inicial** del usuario antes de pasarlo a las etapas posteriores.\n\n## Responsabilidades\n- Detectar ambigüedades en la idea del proyecto.\n- Formular preguntas concisas cuando falte contexto crítico.\n- Reescribir el prompt en formato estructurado.\n\n## Formato de salida\n\`\`\`md\n## Objetivo\n...\n## Contexto\n...\n## Restricciones\n...\n\`\`\`\n`,
-  "discovery.creator": `# Discovery · Creador\n\nGeneras el **brief inicial** del proyecto a partir del prompt clarificado.\n\n## Reglas\n- Identifica el problema, los usuarios y las métricas de éxito.\n- Propón un set inicial de **specs** (módulos funcionales).\n- Usa secciones \`##\` claras y listas cortas.\n`,
-  "discovery.reviewer": `# Discovery · Revisor\n\nRevisas el brief generado por el creador.\n\n## Reglas\n- Valida que existan: Problema, Usuarios, Métricas, Specs.\n- Marca con \`> ⚠️\` toda sección incompleta.\n- Devuelve el documento corregido.\n`,
-  "requirements.creator": `# Requirements · Creador\n\nTransformas una spec en **historias de usuario** con criterios de aceptación verificables.\n\n## Plantilla\n\`\`\`md\n### US-XX · {Título}\nComo {rol} quiero {acción} para {beneficio}.\n\n#### Criterios de aceptación\n- [ ] CA-1: ...\n\`\`\`\n`,
-  "requirements.reviewer": `# Requirements · Revisor\n\nValidas las historias generadas.\n\n## Checklist\n- Cada historia tiene rol, acción y beneficio.\n- Criterios de aceptación son medibles.\n- No hay duplicados ni solapamientos.\n`,
-  "design.creator": `# Design · Creador\n\nProduces el **diseño técnico** de la spec: arquitectura, modelo de datos y endpoints.\n\n## Secciones obligatorias\n- Arquitectura (stack)\n- Modelo de datos\n- Endpoints / contratos\n- Decisiones (ADR resumido)\n`,
-  "design.reviewer": `# Design · Revisor\n\nRevisas coherencia técnica.\n\n## Verifica\n- Consistencia con \`requirements.md\`.\n- Trade-offs explícitos.\n- Seguridad y escalabilidad básicas.\n`,
+  "discovery.creator": MOCK_PROMPTS["discovery.creator"],
+  "discovery.reviewer": MOCK_PROMPTS["discovery.reviewer"],
+  "requirements.creator": MOCK_PROMPTS["requirements.creator"],
+  "requirements.reviewer": MOCK_PROMPTS["requirements.reviewer"],
+  "design.creator": MOCK_PROMPTS["design.creator"],
+  "design.reviewer": MOCK_PROMPTS["design.reviewer"],
   "tasks.creator": `# Tasks · Creador\n\nGeneras el **plan de ejecución** a partir del diseño.\n\n## Formato\n\`\`\`md\n## Sprint 1 · {Nombre}\n- [ ] T-01 {Título} — {estimación}\n\`\`\`\n`,
   "tasks.reviewer": `# Tasks · Revisor\n\nRevisas el plan: estimaciones razonables, dependencias claras, sin tareas duplicadas.\n`,
 };
@@ -76,9 +77,7 @@ export const ALL_AGENT_SLOTS: AgentSlotKey[] = [
 
 /** Tres plantillas base. Cada proyecto recibe UNA spec inicial desde una de estas plantillas. */
 export const SEED_SPEC_TEMPLATES: { name: string }[] = [
-  { name: "Flujo principal" },
-  { name: "Panel operativo" },
-  { name: "Automatización interna" },
+  { name: MOCK_SPEC_NAME },
 ];
 export function pickSeedSpec(projectId?: string, usedNames: string[] = []): { name: string } {
   const used = new Set(usedNames);

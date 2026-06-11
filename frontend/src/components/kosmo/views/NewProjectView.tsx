@@ -29,6 +29,7 @@ import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
 import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
+import { MOCK_PROJECT_NAME, MOCK_PROJECT_DESCRIPTION } from "@/lib/mock-data";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
@@ -47,8 +48,8 @@ import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerI
 import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
 
 export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureAgents: () => void; onGenerate: (projectId: string) => void }) {
-  const [name, setName] = useState("");
-  const [idea, setIdea] = useState("");
+  const [name, setName] = useState(MOCK_PROJECT_NAME);
+  const [idea, setIdea] = useState(MOCK_PROJECT_DESCRIPTION);
   const [agents] = useAgentPrefs();
   const PROJECTS = useVisibleProjects();
   const createProject = useCreateProject();

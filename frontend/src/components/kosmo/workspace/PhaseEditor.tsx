@@ -30,6 +30,7 @@ import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
+import { MOCK_BRIEF_HTML, MOCK_REQUIREMENTS_HTML } from "@/lib/mock-data";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
   useProjectSpecs, useVisibleProjects,
@@ -151,70 +152,21 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
 
 export function phaseInitialHtml(doc: DocKey, specName?: string | null) {
   if (doc === "brief") {
-    return `
-      <h1>Brief del Proyecto</h1>
-      <p>Hacer de <strong>ComeRico</strong> la plataforma digital que transforme la experiencia de reservas: un sistema elegante, confiable y móvil-first que reduzca errores humanos, evite sobreocupaciones y entregue una experiencia profesional desde el primer contacto.</p>
-      <h2>Espacio del problema</h2>
-      <p>Actualmente las reservas se gestionan por WhatsApp y el proceso es caótico: mensajes perdidos, doble reservas, dificultad para visualizar disponibilidad en tiempo real.</p>
-      <h2>Specs detectadas</h2>
-      <p>En base al análisis del descubrimiento, el framework SDD ha dividido el alcance en las siguientes specs:</p>
-      <ul>
-        <li><strong>Reservas</strong> — flujo público de creación y confirmación.</li>
-        <li><strong>Gestión de Mesas</strong> — vista del host con plano y reasignación.</li>
-      </ul>
-      <h2>Métricas de éxito</h2>
-      <ul>
-        <li>Reducir doble reservas en un 95%</li>
-        <li>Aumentar conversión de reserva a visita en 30%</li>
-      </ul>
-    `;
+    return MOCK_BRIEF_HTML;
   }
   const spec = specName ?? "Spec";
   if (doc === "requirements") {
-    return `
-      <h1>Requirements · ${spec}</h1>
-      <h2>Historias de Usuario</h2>
-      <h3>US-01 · Acción principal</h3>
-      <p>Como usuario quiero ejecutar la acción principal de ${spec} con confirmación inmediata.</p>
-      <h4>Criterios de aceptación</h4>
-      <ul>
-        <li>El sistema muestra disponibilidad en tiempo real.</li>
-        <li>La confirmación llega por correo y notificación.</li>
-      </ul>
-      <h3>US-02 · Gestión</h3>
-      <p>Como administrador quiero gestionar el estado y reasignar con un click.</p>
-    `;
+    return MOCK_REQUIREMENTS_HTML;
   }
   if (doc === "design") {
     return `
       <h1>Design · ${spec}</h1>
-      <h2>Arquitectura</h2>
-      <ul>
-        <li><strong>Frontend:</strong> Next.js + TanStack Query</li>
-        <li><strong>Backend:</strong> Node + tRPC</li>
-        <li><strong>DB:</strong> Postgres con Drizzle ORM</li>
-      </ul>
-      <h2>Modelo de datos</h2>
-      <p>Entidades principales asociadas a <strong>${spec}</strong>.</p>
-      <h3>Endpoints</h3>
-      <ul>
-        <li><code>POST /api/${spec.toLowerCase().replace(/\s+/g, "-")}</code></li>
-        <li><code>GET /api/${spec.toLowerCase().replace(/\s+/g, "-")}/:id</code></li>
-      </ul>
+      <p><em>Contenido pendiente de generación.</em></p>
     `;
   }
   return `
     <h1>Tasks · ${spec}</h1>
-    <h2>Sprint 1 · Fundaciones</h2>
-    <ul>
-      <li>Setup de repositorio y CI</li>
-      <li>Esqueleto de la spec ${spec}</li>
-    </ul>
-    <h2>Sprint 2 · Implementación</h2>
-    <ul>
-      <li>Flujos principales</li>
-      <li>Confirmaciones</li>
-    </ul>
+    <p><em>Contenido pendiente de generación.</em></p>
   `;
 }
 
