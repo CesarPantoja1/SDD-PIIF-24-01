@@ -68,15 +68,7 @@ export function ProjectGeneralTab({ projectId }: { projectId: string }) {
       <Card>
         <h3 className="font-semibold flex items-center gap-2"><Wrench className="h-4 w-4 text-indigo-500" /> Información general</h3>
         <p className="mt-1 text-sm text-muted-foreground">Identifica y describe el proyecto.</p>
-        <div className="mt-5 grid gap-4 md:grid-cols-[auto_1fr]">
-          <div>
-            <div className="text-xs font-medium text-slate-600 mb-1">Icono</div>
-            <div className="flex gap-1.5">
-              {[{ k: "folder", I: Folder }, { k: "box", I: Box }, { k: "bot", I: Bot }, { k: "globe", I: Globe }].map(({ k, I }) => (
-                <button key={k} onClick={() => setIcon(k)} className={`grid h-10 w-10 place-items-center rounded-md border ${icon === k ? "border-indigo-500 bg-indigo-50 text-indigo-600" : "border-border text-muted-foreground hover:bg-slate-50"}`}><I className="h-4 w-4" /></button>
-              ))}
-            </div>
-          </div>
+        <div className="mt-5">
           <PField label="Nombre del proyecto"><input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} /></PField>
         </div>
         <div className="mt-4">
@@ -86,27 +78,7 @@ export function ProjectGeneralTab({ projectId }: { projectId: string }) {
           <PField label="Tags (separados por coma)"><input value={tagsStr} onChange={(e) => setTagsStr(e.target.value)} placeholder="marketplace, mobile" className={inputCls} /></PField>
         </div>
       </Card>
-      <Card>
-        <h3 className="font-semibold flex items-center gap-2"><Eye className="h-4 w-4 text-indigo-500" /> Estado y visibilidad</h3>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <PField label="Estado">
-            <div className="flex gap-2">
-              {(["active", "paused", "archived"] as ProjectStatus[]).map((s) => (
-                <button key={s} onClick={() => setStatus(s)} className={`rounded-md border px-3 py-1.5 text-sm font-medium ${status === s ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-border text-slate-600 hover:bg-slate-50"}`}>
-                  {s === "active" ? "Activo" : s === "paused" ? "En pausa" : "Archivado"}
-                </button>
-              ))}
-            </div>
-          </PField>
-          <PField label="Visibilidad">
-            <select value={visibility} onChange={(e) => setVisibility(e.target.value)} className={inputCls}>
-              <option value="private">Privado</option>
-              <option value="workspace">Workspace</option>
-              <option value="public">Público</option>
-            </select>
-          </PField>
-        </div>
-      </Card>
+
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-slate-400">Los cambios se guardan automáticamente, pero también puedes forzarlo aquí.</p>
         <button

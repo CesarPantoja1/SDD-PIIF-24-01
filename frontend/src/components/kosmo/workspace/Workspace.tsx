@@ -200,7 +200,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 flex flex-col border-r border-border">
           <div className="flex-1 min-h-0 flex px-4 py-6 gap-5 overflow-hidden">
-            {outlineOpen && slot.doc !== "code" && <DocOutline editorScope={currentKey} />}
+            {outlineOpen && slot.doc !== "code" && slot.doc !== "design" && <DocOutline editorScope={currentKey} />}
             <div className="flex-1 min-w-0 min-h-0">
               {slot.doc === "code" ? (
                 <CodeGenView

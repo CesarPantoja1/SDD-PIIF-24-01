@@ -75,17 +75,7 @@ export function WorkspaceGeneralTab() {
           <PField label="Tema por defecto"><select value={theme} onChange={(e) => setTheme(e.target.value)} className={inputCls}><option value="system">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></PField>
         </div>
       </Card>
-      <Card>
-        <h3 className="font-semibold flex items-center gap-2"><Eye className="h-4 w-4 text-indigo-500" /> Visibilidad por defecto</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Se aplica al crear nuevos proyectos.</p>
-        <div className="mt-4 flex gap-2">
-          {["private", "workspace", "public"].map((v) => (
-            <button key={v} onClick={() => setDefaultVisibility(v)} className={`rounded-md border px-3 py-1.5 text-sm font-medium ${defaultVisibility === v ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-border text-slate-600 hover:bg-slate-50"}`}>
-              {v === "private" ? "Privado" : v === "workspace" ? "Workspace" : "Público"}
-            </button>
-          ))}
-        </div>
-      </Card>
+
       <div className="flex justify-end gap-2">
         <button className="rounded-md border border-border px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
         <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700 inline-flex items-center gap-1.5"><Save className="h-4 w-4" /> Guardar cambios</button>
