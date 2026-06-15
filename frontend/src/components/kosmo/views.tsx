@@ -5,6 +5,7 @@ export * from "./views/HomeView";
 export * from "./views/MyWorkspaceView";
 export * from "./views/NewProjectView";
 export * from "./views/ProfileView";
+export * from "./views/AboutView";
 export * from "./settings/ApiKeysTab";
 export * from "./settings/WorkspaceGeneralTab";
 export * from "./settings/StandardsTab";

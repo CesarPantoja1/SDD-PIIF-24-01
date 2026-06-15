@@ -9,6 +9,7 @@ export type View =
   | { kind: "my-workspace" }
   | { kind: "new-project" }
   | { kind: "profile" }
+  | { kind: "about" }
   | { kind: "global-settings"; tab: string }
   | { kind: "project-settings"; projectId: string; tab: string }
   | { kind: "workspace"; projectId: string; specId: string | null; doc: DocKey; autoStartBrief?: boolean };

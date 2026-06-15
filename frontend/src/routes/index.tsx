@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import {
   Home, Briefcase, Settings, LogOut, User, Sparkles, Plus,
-  MoreHorizontal, Sun, Moon,
+  MoreHorizontal, Sun, Moon, Info,
 } from "lucide-react";
 import type { View } from "@/lib/types";
 import { useVisibleProjects } from "@/hooks/use-project";
@@ -12,7 +12,7 @@ import {
   SidebarItem, SidebarProjectRow, MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 import {
-  HomeView, MyWorkspaceView, NewProjectView, ProfileView,
+  HomeView, MyWorkspaceView, NewProjectView, ProfileView, AboutView,
   GlobalSettings, ProjectSettings,
 } from "@/components/kosmo/views";
 import { Workspace } from "@/components/kosmo/workspace";
@@ -113,6 +113,7 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
             <div className="absolute bottom-full left-2 right-2 mb-2 rounded-lg border border-border bg-card p-1.5 shadow-lg">
               <MenuItem icon={User} label="Profile" onClick={() => { setView({ kind: "profile" }); setProfileOpen(false); }} />
               <MenuItem icon={Settings} label="Settings" onClick={() => { setView({ kind: "global-settings", tab: "General" }); setProfileOpen(false); }} />
+              <MenuItem icon={Info} label="Acerca de KOSMO" onClick={() => { setView({ kind: "about" }); setProfileOpen(false); }} />
               <div className="my-1 h-px bg-slate-100" />
               <MenuItem icon={LogOut} label="Log out" onClick={() => { setProfileOpen(false); onSignOut(); }} />
             </div>
@@ -148,6 +149,7 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
           {view.kind === "my-workspace" && <MyWorkspaceView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onSettings={(id) => setView({ kind: "project-settings", projectId: id, tab: "General" })} onNew={() => setView({ kind: "new-project" })} />}
           {view.kind === "new-project" && <NewProjectView onConfigureAgents={() => setView({ kind: "global-settings", tab: "Coding Agents" })} onGenerate={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief", autoStartBrief: false })} />}
           {view.kind === "profile" && <ProfileView />}
+          {view.kind === "about" && <AboutView />}
           {view.kind === "global-settings" && <GlobalSettings tab={view.tab} onTab={(t) => setView({ kind: "global-settings", tab: t })} onOpenApiKeys={openApiKeys} />}
           {view.kind === "project-settings" && (
             <ProjectSettings
