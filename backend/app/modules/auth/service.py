@@ -87,9 +87,8 @@ class AuthService:
         client = get_supabase_user_client(current_user.access_token)
         result = (
             client.table("profiles")
-            .update({"display_name": display_name.strip()})
+            .update({"display_name": display_name.strip()}, returning="representation")
             .eq("id", current_user.id)
-            .select(_PROFILE_SELECT)
             .execute()
         )
         data = result.data[0] if isinstance(result.data, list) and result.data else result.data
@@ -114,8 +113,8 @@ class AuthService:
                     "display_name": display_name,
                 },
                 on_conflict="id",
+                returning="representation",
             )
-            .select(_PROFILE_SELECT)
             .execute()
         )
         data = result.data[0] if isinstance(result.data, list) and result.data else result.data
