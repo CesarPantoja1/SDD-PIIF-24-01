@@ -13,7 +13,6 @@ class ProjectCreateRequest(BaseModel):
 class ProjectUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     description: str | None = Field(default=None, max_length=2000)
-    status: str | None = Field(default=None, pattern="^(active|paused|archived)$")
     tags: list[str] | None = Field(default=None, max_length=12)
 
 
@@ -32,4 +31,3 @@ class ProjectResponse(BaseModel):
 
 class ProjectListResponse(BaseModel):
     items: list[ProjectResponse]
-

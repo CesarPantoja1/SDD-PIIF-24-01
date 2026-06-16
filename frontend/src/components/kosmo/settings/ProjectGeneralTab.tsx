@@ -51,18 +51,17 @@ export function ProjectGeneralTab({ projectId }: { projectId: string }) {
   const [name, setName] = useState(project.name);
   const [desc, setDesc] = useState(project.description);
   const [tagsStr, setTagsStr] = useState(project.tags.join(", "));
-  const [status, setStatus] = useState<ProjectStatus>(project.status);
   const [visibility, setVisibility] = useLocal(`kosmo.project.${projectId}.visibility`, "private");
   const [icon, setIcon] = useLocal(`kosmo.project.${projectId}.icon`, "folder");
-  useEffect(() => { setName(project.name); setDesc(project.description); setTagsStr(project.tags.join(", ")); setStatus(project.status); }, [project.id, project.name, project.description, project.tags.join(","), project.status]);
+  useEffect(() => { setName(project.name); setDesc(project.description); setTagsStr(project.tags.join(", ")); }, [project.id, project.name, project.description, project.tags.join(",")]);
   useEffect(() => {
     if (!project.id || !project.name) return;
     const tags = tagsStr.split(",").map(t => t.trim()).filter(Boolean);
-    const changed = name !== project.name || desc !== project.description || status !== project.status || JSON.stringify(tags) !== JSON.stringify(project.tags);
+    const changed = name !== project.name || desc !== project.description || JSON.stringify(tags) !== JSON.stringify(project.tags);
     if (!changed) return;
-    const t = setTimeout(() => { update.mutate({ name, description: desc, tags, status }); }, 600);
+    const t = setTimeout(() => { update.mutate({ name, description: desc, tags }); }, 600);
     return () => clearTimeout(t);
-  }, [name, desc, tagsStr, status]);
+  }, [name, desc, tagsStr]);
   return (
     <div className="max-w-3xl space-y-6">
       <Card>
@@ -84,7 +83,7 @@ export function ProjectGeneralTab({ projectId }: { projectId: string }) {
         <button
           onClick={() => {
             const tags = tagsStr.split(",").map(t => t.trim()).filter(Boolean);
-            update.mutate({ name, description: desc, tags, status });
+            update.mutate({ name, description: desc, tags });
           }}
           disabled={update.isPending}
           className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"

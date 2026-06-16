@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Sparkles, Eye, EyeOff, FileText, Layers, Bot, ShieldCheck, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { apiClient } from "@/lib/api/client";
+import type { AuthSessionResponse } from "@/lib/api/api";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "KOSMO — Acceso" }] }),
@@ -29,22 +31,33 @@ function AuthPage() {
     e.preventDefault();
     setErr(null); setInfo(null); setBusy(true);
     try {
+      let session: AuthSessionResponse;
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password: pwd });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email, password: pwd,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { display_name: name || email.split("@")[0] },
-          },
+        // Route through FastAPI backend — it validates credentials and returns tokens
+        session = await apiClient.post<AuthSessionResponse>("/auth/login", {
+          email,
+          password: pwd,
         });
-        if (error) throw error;
+      } else {
+        // Route through FastAPI backend — it creates the user + profile row
+        session = await apiClient.post<AuthSessionResponse>("/auth/register", {
+          email,
+          password: pwd,
+          display_name: name.trim() || email.split("@")[0],
+        });
       }
+
+      // Sync the session into the Supabase client so useAuth() sees the user
+      if (session.access_token && session.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+      }
+
       navigate({ to: "/" });
     } catch (e: any) {
-      setErr(e.message ?? "Error");
+      setErr(e.message ?? "Error desconocido");
     } finally {
       setBusy(false);
     }
@@ -90,7 +103,7 @@ function AuthPage() {
         <div className="relative flex-1 flex items-center justify-center">
           <div className="max-w-md text-center">
             <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight">
-              Del <span className="italic font-light">brief</span> al código,
+              De una <span className="italic font-light">idea</span> al <span className="italic font-light"> código</span>,
               <br /> con <span className="text-white/90">agentes IA.</span>
             </h1>
             <p className="mt-6 text-base text-white/80 mx-auto max-w-sm">

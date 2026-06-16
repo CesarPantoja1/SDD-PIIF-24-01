@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchMe, updateMe } from "@/lib/api/api";
 import { useAuth } from "./use-auth";
 
 export type ProfileData = { name: string; email: string; role: string; bio: string };
@@ -9,28 +9,33 @@ const empty: ProfileData = { name: "", email: "", role: "", bio: "" };
 
 export function useProfile() {
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const token = session?.access_token ?? null;
   const key = ["profile", user?.id];
+
   const { data } = useQuery({
     queryKey: key,
-    enabled: !!user,
+    enabled: !!user && !!token,
     queryFn: async (): Promise<ProfileData> => {
-      const { data } = await supabase.from("profiles")
-        .select("display_name").eq("id", user!.id).maybeSingle();
+      const profile = await fetchMe(token!);
       return {
-        name: data?.display_name ?? user!.email?.split("@")[0] ?? "",
-        email: user!.email ?? "",
-        role: (user!.user_metadata as any)?.role ?? "",
-        bio: (user!.user_metadata as any)?.bio ?? "",
+        name: profile.display_name ?? user!.email?.split("@")[0] ?? "",
+        email: profile.email ?? user!.email ?? "",
+        role: profile.role ?? "user",
+        bio: (user!.user_metadata as Record<string, unknown>)?.bio as string ?? "",
       };
     },
     initialData: empty,
   });
-  const setProfile = useCallback(async (next: ProfileData) => {
-    qc.setQueryData(key, next);
-    if (!user) return;
-    await supabase.from("profiles").update({ display_name: next.name }).eq("id", user.id);
-    await supabase.auth.updateUser({ data: { role: next.role, bio: next.bio } });
-  }, [qc, user]);
+
+  const setProfile = useCallback(
+    async (next: ProfileData) => {
+      qc.setQueryData(key, next);
+      if (!user || !token) return;
+      await updateMe(token, next.name);
+    },
+    [qc, user, token] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return [data ?? empty, setProfile] as const;
 }

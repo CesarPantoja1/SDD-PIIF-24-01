@@ -14,7 +14,7 @@ class LoginRequest(BaseModel):
 
 class ProfileResponse(BaseModel):
     id: str
-    email: EmailStr | None = None
+    email: str | None = None
     display_name: str | None = None
     avatar_url: str | None = None
     role: str = "user"

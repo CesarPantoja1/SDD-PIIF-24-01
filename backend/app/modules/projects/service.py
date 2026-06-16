@@ -5,6 +5,9 @@ from app.db.supabase import get_supabase_user_client
 from app.modules.auth.dependencies import CurrentUser
 from app.modules.projects.schemas import ProjectCreateRequest, ProjectResponse, ProjectUpdateRequest
 
+# Columns to always select from the projects table (must match DB schema)
+_SELECT = "id,owner_id,name,description,status,tags,cost,tokens,created_at,updated_at"
+
 
 class ProjectService:
     def __init__(self) -> None:
@@ -14,7 +17,7 @@ class ProjectService:
         client = get_supabase_user_client(current_user.access_token)
         result = (
             client.table("projects")
-            .select("id,owner_id,name,description,status,tags,cost,tokens,created_at,updated_at")
+            .select(_SELECT)
             .eq("owner_id", current_user.id)
             .is_("deleted_at", "null")
             .order("updated_at", desc=True)
@@ -50,6 +53,7 @@ class ProjectService:
         payload: ProjectUpdateRequest,
         current_user: CurrentUser,
     ) -> ProjectResponse:
+        # Verify ownership first
         self._get_project_row(project_id, current_user)
         client = get_supabase_user_client(current_user.access_token)
         patch = payload.model_dump(exclude_unset=True)
@@ -75,7 +79,8 @@ class ProjectService:
     def delete_project(self, project_id: str, current_user: CurrentUser) -> None:
         self._get_project_row(project_id, current_user)
         (
-            get_supabase_user_client(current_user.access_token).table("projects")
+            get_supabase_user_client(current_user.access_token)
+            .table("projects")
             .update({"deleted_at": datetime.now(UTC).isoformat()})
             .eq("id", project_id)
             .eq("owner_id", current_user.id)
@@ -86,7 +91,7 @@ class ProjectService:
         db = get_supabase_user_client(current_user.access_token)
         result = (
             db.table("projects")
-            .select("id,owner_id,name,description,status,tags,cost,tokens,created_at,updated_at")
+            .select(_SELECT)
             .eq("id", project_id)
             .eq("owner_id", current_user.id)
             .is_("deleted_at", "null")
