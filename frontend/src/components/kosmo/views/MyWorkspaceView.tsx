@@ -48,7 +48,7 @@ import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerI
 export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenProject: (id: string) => void; onSettings: (id: string) => void; onNew: () => void }) {
   const PROJECTS = useVisibleProjects();
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<ProjectStatus | "all">("all");
+  const status: ProjectStatus | "all" = "all";
   const [sort, setSort] = useState<"recent" | "name" | "cost">("recent");
   const [view, setViewMode] = useState<"grid" | "list">("grid");
   const allTags = Array.from(new Set(PROJECTS.flatMap((p) => p.tags)));
@@ -69,13 +69,6 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenPr
     return +new Date(b.updatedAt) - +new Date(a.updatedAt);
   });
 
-  const counts = {
-    all: PROJECTS.length,
-    active: PROJECTS.filter((p) => p.status === "active").length,
-    paused: PROJECTS.filter((p) => p.status === "paused").length,
-    archived: PROJECTS.filter((p) => p.status === "archived").length,
-  };
-
   return (
     <div className="h-full overflow-y-auto px-10 py-8">
       <div className="flex items-end justify-between gap-4">
@@ -88,20 +81,7 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenPr
         </button>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-1.5">
-        {(["all", "active", "paused", "archived"] as const).map((k) => (
-          <button
-            key={k}
-            onClick={() => setStatus(k)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${status === k ? "bg-indigo-600 text-white border-indigo-600" : "bg-card text-slate-600 border-border hover:bg-slate-50"}`}
-          >
-            <span>{k === "all" ? "Todos" : k === "active" ? "Activos" : k === "paused" ? "En pausa" : "Archivados"}</span>
-            <span className={`tabular-nums text-[10px] rounded-full px-1.5 py-0.5 ${status === k ? "bg-white/20" : "bg-slate-100 text-muted-foreground"}`}>{counts[k]}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[240px] max-w-md">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
           <input
