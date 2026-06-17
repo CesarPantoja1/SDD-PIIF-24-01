@@ -1,30 +1,82 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-// import { supabase } from "@/integrations/supabase/client"; // Habilitado cuando api_keys esté en scope
+import { useAuth } from "./use-auth";
+import { apiClient } from "@/lib/api/client";
 import { DEFAULT_KEYS } from "@/lib/constants";
-import type { ApiKeys } from "@/lib/types";
-// import { useAuth } from "./use-auth"; // Habilitado cuando api_keys esté en scope
+import type { ApiKeys, ProviderKey } from "@/lib/types";
+
+type TestResult = { ok: boolean; provider: string; error?: string | null };
 
 export function useApiKeys() {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
   const qc = useQueryClient();
-  // const { user } = useAuth(); // TODO (iteración futura): conectar con tabla api_keys vía backend
-  const key = ["api_keys"];
-  const { data } = useQuery({
-    queryKey: key,
-    enabled: false, // Deshabilitado hasta que la tabla api_keys esté en scope
+  const queryKey = ["api_keys"];
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    enabled: !!token,
     queryFn: async (): Promise<ApiKeys> => {
-      // TODO (iteración futura): implementar con backend
-      // const { data } = await supabase.from("api_keys").select("keys").eq("user_id", user!.id).maybeSingle();
-      // return { ...DEFAULT_KEYS, ...((data?.keys as Partial<ApiKeys>) ?? {}) };
-      return DEFAULT_KEYS;
+      const res = await apiClient.get<{ keys: ApiKeys }>("/auth/me/api-keys", token);
+      return { ...DEFAULT_KEYS, ...res.keys };
     },
     initialData: DEFAULT_KEYS,
   });
-  const setKeys = useCallback(async (next: ApiKeys) => {
-    qc.setQueryData(key, next);
-    // TODO (iteración futura): persistir en backend
-    // if (!user) return;
-    // await supabase.from("api_keys").upsert({ user_id: user.id, keys: next as any }, { onConflict: "user_id" } as any);
-  }, [qc]); // eslint-disable-line react-hooks/exhaustive-deps
-  return [data ?? DEFAULT_KEYS, setKeys] as const;
+
+  const saveKey = useCallback(
+    async (provider: ProviderKey, key: string): Promise<ApiKeys> => {
+      const res = await apiClient.put<{ keys: ApiKeys }>(
+        "/auth/me/api-keys",
+        { provider, key },
+        token,
+      );
+      const next = { ...DEFAULT_KEYS, ...res.keys };
+      qc.setQueryData(queryKey, next);
+      return next;
+    },
+    [token, qc],
+  );
+
+  const deleteKey = useCallback(
+    async (provider: ProviderKey): Promise<ApiKeys> => {
+      const res = await apiClient.delete<{ keys: ApiKeys; provider: string }>(
+        `/auth/me/api-keys/${provider}`,
+        token,
+      );
+      const next = { ...DEFAULT_KEYS, ...res.keys };
+      qc.setQueryData(queryKey, next);
+      return next;
+    },
+    [token, qc],
+  );
+
+  const testKey = useCallback(
+    async (provider: ProviderKey, key?: string): Promise<TestResult> => {
+      if (key !== undefined) {
+        return apiClient.post<TestResult>("/auth/me/api-keys/test", { provider, key }, token);
+      }
+      return apiClient.post<TestResult>(`/auth/me/api-keys/${provider}/test`, {}, token);
+    },
+    [token],
+  );
+
+  const revealKey = useCallback(
+    async (provider: ProviderKey): Promise<{ provider: string; key: string }> => {
+      return apiClient.post<{ provider: string; key: string }>(
+        `/auth/me/api-keys/${provider}/reveal`,
+        { confirm: true },
+        token,
+      );
+    },
+    [token],
+  );
+
+  return {
+    keys: data ?? DEFAULT_KEYS,
+    isLoading,
+    saveKey,
+    deleteKey,
+    testKey,
+    revealKey,
+  } as const;
 }

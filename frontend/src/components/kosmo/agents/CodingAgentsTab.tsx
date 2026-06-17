@@ -48,7 +48,7 @@ import { AgentPickerInner } from "@/components/kosmo/agents/AgentPicker";
 import { PromptEditorModal } from "@/components/kosmo/agents/PromptEditorModal";
 
 export function CodingAgentsTab({ agents, setAgents, scope, scopeId, onOpenApiKeys }: { agents: AgentsConfig; setAgents: (a: AgentsConfig) => void; scope: "project" | "global"; scopeId: string; onOpenApiKeys: () => void }) {
-  const [keys] = useApiKeys();
+  const { keys } = useApiKeys();
   const promptScope: "global" | string = scope === "global" ? "global" : scopeId;
   const [editing, setEditing] = useState<AgentSlotKey | null>(null);
   const updateClarifier = (patch: Partial<AgentSpec>) => {

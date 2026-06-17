@@ -19,6 +19,14 @@ export type ProfileResponse = {
   role: string;
 };
 
+export type AuthSessionResponse = {
+  access_token: string | null;
+  refresh_token: string | null;
+  token_type: string;
+  expires_in: number | null;
+  user: ProfileResponse;
+};
+
 export type ProjectResponse = {
   id: string;
   owner_id: string;

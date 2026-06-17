@@ -69,4 +69,7 @@ export const apiClient = {
 
   delete: <T = void>(path: string, token?: string | null) =>
     request<T>("DELETE", path, { token }),
+
+  put: <T>(path: string, body: unknown, token?: string | null) =>
+    request<T>("PUT", path, { token, body }),
 };

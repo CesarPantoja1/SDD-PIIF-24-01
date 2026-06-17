@@ -43,6 +43,32 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
+  const all = Object.keys(PROVIDERS) as ProviderKey[];
+  const withKeys = all.filter((k) => !!keys[k]?.trim());
+  const currentHasKey = !!keys[currentProvider]?.trim();
+
+  if (!currentHasKey && withKeys.length === 0) {
+    return all.map((k) => (
+      <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>
+    ));
+  }
+
+  const options = withKeys.map((k) => (
+    <option key={k} value={k}>{PROVIDERS[k].label}</option>
+  ));
+
+  if (!currentHasKey) {
+    options.push(
+      <option key={currentProvider} value={currentProvider} disabled>
+        {PROVIDERS[currentProvider].label} (sin API Key)
+      </option>,
+    );
+  }
+
+  return options;
+}
+
 export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onEditPrompt }: { label: string; desc: string; spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void; onEditPrompt?: () => void }) {
   const hasKey = !!keys[spec.provider]?.trim();
   const models = PROVIDERS[spec.provider].models;
@@ -75,9 +101,7 @@ export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onE
             }}
             className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
-            {(Object.keys(PROVIDERS) as ProviderKey[]).map((k) => (
-              <option key={k} value={k}>{PROVIDERS[k].label}</option>
-            ))}
+            {buildProviderOptions(keys, spec.provider)}
           </select>
         </div>
         <div>

@@ -43,6 +43,32 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
+  const all = Object.keys(PROVIDERS) as ProviderKey[];
+  const withKeys = all.filter((k) => !!keys[k]?.trim());
+  const currentHasKey = !!keys[currentProvider]?.trim();
+
+  if (!currentHasKey && withKeys.length === 0) {
+    return all.map((k) => (
+      <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>
+    ));
+  }
+
+  const options = withKeys.map((k) => (
+    <option key={k} value={k}>{PROVIDERS[k].label}</option>
+  ));
+
+  if (!currentHasKey) {
+    options.push(
+      <option key={currentProvider} value={currentProvider} disabled>
+        {PROVIDERS[currentProvider].label} (sin API Key)
+      </option>,
+    );
+  }
+
+  return options;
+}
+
 export function AgentPicker({ spec, keys, onChange, onOpenApiKeys }: { spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void }) {
   return <AgentPickerInner spec={spec} keys={keys} onChange={onChange} onOpenApiKeys={onOpenApiKeys} />;
 }
@@ -61,7 +87,7 @@ export function AgentPickerInner({ spec, keys, onChange, onOpenApiKeys, hideMiss
             onChange={(e) => { const p = e.target.value as ProviderKey; onChange({ provider: p, model: PROVIDERS[p].models[0] }); }}
             className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
-            {(Object.keys(PROVIDERS) as ProviderKey[]).map((k) => <option key={k} value={k}>{PROVIDERS[k].label}</option>)}
+            {buildProviderOptions(keys, spec.provider)}
           </select>
         </div>
         <div>

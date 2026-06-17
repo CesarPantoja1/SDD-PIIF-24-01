@@ -1,83 +1,36 @@
-import { useState, useEffect, useRef } from "react";
-import type { ReactNode } from "react";
-import {
-  Home, Briefcase, ChevronRight, ChevronDown, Settings, LogOut, User,
-  FileText, Layers, ListChecks, Compass, Send, Sparkles, Plus,
-  CheckCircle2, Circle, Github, Cpu, AlertTriangle, Globe, Wrench,
-  BarChart3, Box, GitBranch, Bot, MoreHorizontal, Edit3, Eye, Search,
-  Zap, Folder, FolderOpen, Terminal, Sun, Moon, MessageSquare, X, ArrowRight,
-  Bold, Italic, Strikethrough, Code, Heading1, Heading2, List, ListOrdered,
-  Quote, Code2, Minus, Table as TableIcon, Link as LinkIcon, Undo2, Redo2,
-  Copy, Download, Maximize2, Wand2, RefreshCw, Save, PanelLeft,
-  ClipboardList, Brain, Lock, GitCommit, GitMerge, ArrowDownToLine, ArrowUpFromLine,
-  Trash2, FileCode2,
-} from "lucide-react";
-import type {
-  AgentSlotKey, AgentSpec, AgentsConfig, ApiKeys, DocKey,
-  ProjectMeta, ProjectStatus, ProviderKey, SpecRef, StageKey, View,
-} from "@/lib/types";
-import {
-  AGENT_SLOT_LABELS, ALL_AGENT_SLOTS, DEFAULT_AGENTS, DEFAULT_KEYS,
-  DEFAULT_PROMPTS, DEFAULT_SPECS, DOCS, MAX_PROJECTS, PROJECTS, PROVIDERS,
-  SPEC_DOCS, STAGE_COLORS, STAGES,
-} from "@/lib/constants";
-import {
-  DELETED_KEY, KEYS_KEY, PREFS_KEY, docKey, generatedKey, openSpecsKey,
-  projectAgentsKey, projectNameKey, promptKey, specsKey,
-} from "@/lib/storage";
-import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
-import { useLocal } from "@/hooks/use-local";
+import { Cpu } from "lucide-react";
+import type { ProviderKey } from "@/lib/types";
+import { PROVIDERS } from "@/lib/constants";
+import { Card } from "@/components/kosmo/common";
 import { useApiKeys } from "@/hooks/use-api-keys";
-import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
-import { usePromptTemplate } from "@/hooks/use-prompt-template";
-import {
-  useDeletedProjects, useGenerated, useProjectDisplayName,
-  useProjectSpecs, useVisibleProjects,
-} from "@/hooks/use-project";
-
-import {
-  Card, CardHeader, Badge, Stat, KpiCard, Donut, fmtTokens, MissingKeyHint,
-  PromptEditButton, IconBtn, ToolBtn, ToolDiv, Section, Tree, DiagramBox,
-  Arrow, Dot, InnerSidebar, iconFor, TerminalLog, timeAgo, PField,
-  PlaceholderCard, StatusBadge, inputCls, SidebarProjectRow, SidebarItem,
-  MenuItem, ProjectTree,
-} from "@/components/kosmo/common";
-
-import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
+import { ProviderKeyCard } from "@/components/kosmo/settings/ProviderKeyCard";
 
 export function ApiKeysTab() {
-  const [keys, setKeys] = useApiKeys();
-  const [draft, setDraft] = useState<ApiKeys>(keys);
-  useEffect(() => { setDraft(keys); }, [keys]);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(keys);
+  const { keys, saveKey, deleteKey, testKey, revealKey } = useApiKeys();
+
   return (
     <div className="max-w-2xl">
       <Card>
-        <h3 className="font-semibold flex items-center gap-2"><Cpu className="h-4 w-4 text-indigo-500" /> Proveedores de modelos</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Registra las API Keys de los proveedores. Solo los proveedores con clave podrán usarse al asignar agentes.</p>
+        <h3 className="font-semibold flex items-center gap-2">
+          <Cpu className="h-4 w-4 text-indigo-500" /> Proveedores de modelos
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Registra las API Keys de los proveedores. Solo los proveedores con clave podrán usarse al asignar agentes.
+        </p>
         <div className="mt-5 space-y-4">
-          {(Object.keys(PROVIDERS) as ProviderKey[]).map((k) => (
-            <div key={k}>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-slate-600">{PROVIDERS[k].label}</label>
-                {keys[k]?.trim() ? <Badge tone="green">Guardada</Badge> : <Badge tone="slate">Sin configurar</Badge>}
-              </div>
-              <input
-                type="password"
-                value={draft[k]}
-                onChange={(e) => setDraft({ ...draft, [k]: e.target.value })}
-                placeholder={`${PROVIDERS[k].label} API Key`}
-                className="w-full rounded-md border border-border px-3 py-2 text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
-              />
-            </div>
+          {(Object.keys(PROVIDERS) as ProviderKey[]).map((provider) => (
+            <ProviderKeyCard
+              key={provider}
+              provider={provider}
+              savedKey={keys[provider] ?? ""}
+              onSave={(key) => saveKey(provider, key)}
+              onDelete={() => deleteKey(provider)}
+              onTest={(key?) => testKey(provider, key)}
+              onReveal={() => revealKey(provider)}
+            />
           ))}
-        </div>
-        <div className="mt-6 flex justify-end gap-2">
-          <button onClick={() => setDraft(keys)} disabled={!dirty} className="rounded-md border border-border px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40">Cancelar</button>
-          <button onClick={() => setKeys(draft)} disabled={!dirty} className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40">Guardar</button>
         </div>
       </Card>
     </div>
   );
 }
-

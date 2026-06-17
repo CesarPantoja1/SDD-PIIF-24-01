@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None
     database_url: str | None = None
 
+    encryption_key: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.backend_cors_origins.split(",") if origin.strip()]

@@ -9,11 +9,11 @@ import { MOCK_PROMPTS, MOCK_SPEC_NAME } from "./mock-data";
 
 export const MAX_PROJECTS = 3;
 
-export const PROVIDERS: Record<ProviderKey, { label: string; models: string[] }> = {
-  deepseek: { label: "DeepSeek", models: ["deepseek-chat", "deepseek-reasoner"] },
-  google: { label: "Google (Gemini)", models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"] },
-  openai: { label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"] },
-  anthropic: { label: "Anthropic (Claude)", models: ["claude-opus-4", "claude-sonnet-4", "claude-3.7-sonnet", "claude-3.5-haiku"] },
+export const PROVIDERS: Record<ProviderKey, { label: string; models: string[]; keyUrl: string; keyPrefix: string }> = {
+  deepseek: { label: "DeepSeek", models: ["deepseek-chat", "deepseek-reasoner"], keyUrl: "https://platform.deepseek.com/api_keys", keyPrefix: "sk-" },
+  google: { label: "Google (Gemini)", models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"], keyUrl: "https://aistudio.google.com/apikey", keyPrefix: "AIza" },
+  openai: { label: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"], keyUrl: "https://platform.openai.com/api-keys", keyPrefix: "sk-" },
+  anthropic: { label: "Anthropic (Claude)", models: ["claude-opus-4", "claude-sonnet-4", "claude-3.7-sonnet", "claude-3.5-haiku"], keyUrl: "https://console.anthropic.com/keys", keyPrefix: "sk-ant-" },
 };
 
 export const STAGES: { key: StageKey; label: string; sub: string; icon: any }[] = [
