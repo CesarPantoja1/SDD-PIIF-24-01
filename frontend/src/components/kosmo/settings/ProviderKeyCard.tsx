@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Cpu, Eye, EyeOff, Trash2, RefreshCw, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Cpu, Trash2, RefreshCw, CheckCircle2, XCircle, ExternalLink, Copy, CopyCheck } from "lucide-react";
 import type { ProviderKey } from "@/lib/types";
 import { PROVIDERS } from "@/lib/constants";
 import { Badge } from "@/components/kosmo/common";
@@ -21,15 +21,16 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
 
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [draft, setDraft] = useState(savedKey);
-  const [visible, setVisible] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setDraft(savedKey);
@@ -38,6 +39,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
   useEffect(() => {
     return () => {
       if (revealTimer.current) clearTimeout(revealTimer.current);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
     };
   }, []);
 
@@ -83,6 +85,10 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
   };
 
   const handleReveal = async () => {
+    if (revealedKey) {
+      hideRevealed();
+      return;
+    }
     setRevealing(true);
     try {
       const res = await onReveal();
@@ -101,9 +107,23 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
     setRevealedKey(null);
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(revealedKey ?? draft);
+      setCopied(true);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard denied */
+    }
+  };
+
   const dirty = draft !== savedKey;
   const canSave = draft.trim().length > 0 && dirty;
   const canTest = mode === "view" || draft.trim().length > 0;
+
+  const maskedKey =
+    savedKey.length > 8 ? `${savedKey.slice(0, 4)}...${savedKey.slice(-4)}` : "••••••••";
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -128,20 +148,22 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
       {mode === "view" && hasSavedKey ? (
         <div className="flex items-center gap-2 mb-2">
           <code className="flex-1 rounded-md bg-slate-50 border border-border px-3 py-2 text-sm font-mono text-slate-600 select-all">
-            {visible ? savedKey : savedKey.length > 8 ? `${savedKey.slice(0, 4)}...${savedKey.slice(-4)}` : "••••••••"}
+            {revealedKey ?? maskedKey}
           </code>
-          <button
-            onClick={() => setVisible((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
-            title={visible ? "Ocultar key" : "Mostrar key"}
-          >
-            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          {revealedKey && (
+            <button
+              onClick={handleCopy}
+              className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
+              title="Copiar al portapapeles"
+            >
+              {copied ? <CopyCheck className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex items-center gap-2 mb-2">
           <input
-            type={visible ? "text" : "password"}
+            type="text"
             value={draft}
             onChange={(e) => {
               setDraft(e.target.value);
@@ -152,13 +174,15 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
             autoComplete="off"
             spellCheck={false}
           />
-          <button
-            onClick={() => setVisible((v) => !v)}
-            className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
-            title={visible ? "Ocultar key" : "Mostrar key"}
-          >
-            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+          {draft.trim().length > 0 && (
+            <button
+              onClick={handleCopy}
+              className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
+              title="Copiar al portapapeles"
+            >
+              {copied ? <CopyCheck className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            </button>
+          )}
         </div>
       )}
 
@@ -166,19 +190,6 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
       <p className="text-[11px] text-slate-400 mb-2">
         Formato esperado: <code className="text-slate-500">{info.keyPrefix}...</code>
       </p>
-
-      {/* Revealed key (temporary) */}
-      {revealedKey && (
-        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-amber-700 mb-1">Key completa (se ocultará automáticamente)</p>
-            <code className="block text-xs font-mono text-amber-800 break-all select-all">{revealedKey}</code>
-          </div>
-          <button onClick={hideRevealed} className="text-amber-500 hover:text-amber-700 shrink-0">
-            <XCircle className="h-4 w-4" />
-          </button>
-        </div>
-      )}
 
       {/* Test result */}
       {testResult && (
@@ -227,7 +238,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
         {mode === "view" && hasSavedKey ? (
           <>
             <button
-              onClick={() => { setMode("edit"); setTestResult(null); }}
+              onClick={() => { setMode("edit"); setTestResult(null); hideRevealed(); }}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
               Reemplazar
@@ -237,7 +248,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
               disabled={revealing}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
             >
-              {revealing ? "..." : "Revelar"}
+              {revealing ? "..." : revealedKey ? "Ocultar" : "Revelar"}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
