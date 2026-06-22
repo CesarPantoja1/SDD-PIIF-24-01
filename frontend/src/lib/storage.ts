@@ -18,7 +18,8 @@ export function promptKey(scope: "global" | string, slot: AgentSlotKey) {
     : `kosmo.prompt.project.${scope}.${slot}`;
 }
 
-/** Stable key for the generated map: "brief" or "<specId>.<doc>" */
+/** Stable key for the generated map: "brief" / "specs" or "<specId>.<doc>" */
 export function docKey(specId: string | null, doc: DocKey) {
-  return doc === "brief" ? "brief" : `${specId}.${doc}`;
+  if (doc === "brief" || doc === "specs") return doc;
+  return `${specId}.${doc}`;
 }

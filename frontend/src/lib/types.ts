@@ -2,7 +2,7 @@
 
 export type Theme = "light" | "dark";
 
-export type DocKey = "brief" | "requirements" | "design" | "tasks" | "code";
+export type DocKey = "brief" | "specs" | "requirements" | "design" | "tasks" | "code";
 
 export type View =
   | { kind: "home" }
@@ -38,7 +38,7 @@ export type AgentSlotKey =
   | `${StageKey}.creator`
   | `${StageKey}.reviewer`;
 
-export type SpecRef = { id: string; name: string };
+export type SpecRef = { id: string; name: string; description?: string };
 
 export type ProjectStatus = "active" | "paused" | "archived";
 

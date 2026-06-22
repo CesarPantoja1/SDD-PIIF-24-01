@@ -185,12 +185,22 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
         <span className="ml-auto text-[10px] text-slate-400">brief.md</span>
       </button>
 
+      {/* Specs overview (global) */}
+      <button
+        onClick={() => onPick(null, "specs")}
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${isActive(null, "specs") ? "bg-violet-50 text-violet-700 font-medium" : "text-slate-600 hover:bg-white"}`}
+      >
+        <Layers className="h-3.5 w-3.5" />
+        <span>Especificaciones</span>
+        <span className="ml-auto text-[10px] text-slate-400">{specs.length > 0 ? `${specs.length}` : ""}</span>
+      </button>
+
       {/* Specs */}
       <div className="mt-2 px-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        <span>Specs · {specs.length}</span>
+        <span>Módulos · {specs.length}</span>
       </div>
       {specs.length === 0 && (
-        <div className="px-2 py-1.5 text-[11px] italic text-slate-400">Genera Discovery para crear specs</div>
+        <div className="px-2 py-1.5 text-[11px] italic text-slate-400">Genera specs desde Especificaciones</div>
       )}
       {specs.map((s) => {
         const open = !!openSpecs[s.id];
@@ -210,15 +220,12 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
                   const D = DOCS[d];
                   const Icon = D.icon;
                   const active = isActive(s.id, d);
-                  const isUnlocked = unlocked(s.id, d);
                   const isGen = !!generated[docKey(s.id, d)];
                   return (
                     <button
                       key={d}
-                      onClick={() => { if (isUnlocked) onPick(s.id, d); }}
-                      disabled={!isUnlocked}
-                      title={!isUnlocked ? "Bloqueado: genera la fase anterior primero" : undefined}
-                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-[12.5px] ${active ? "bg-indigo-50 text-indigo-700 font-medium" : isGen ? "text-slate-600 hover:bg-white" : "text-slate-400"} ${!isUnlocked ? "cursor-not-allowed hover:bg-transparent" : ""}`}
+                      onClick={() => onPick(s.id, d)}
+                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-[12.5px] ${active ? "bg-indigo-50 text-indigo-700 font-medium" : isGen ? "text-slate-600 hover:bg-white" : "text-slate-400 hover:bg-white"}`}
                     >
                       <Icon className={`h-3.5 w-3.5 shrink-0 ${isGen || active ? "" : "text-slate-300"}`} />
                       <span>{D.label}</span>

@@ -126,65 +126,30 @@ export function useDeletedProjects() {
   return [[] as string[], setDeleted] as const;
 }
 
-// ─── Specs (fuera del scope actual — código original preservado en comentarios) ──
+import { useLocal } from "./use-local";
+
+// ─── Specs (mock data persistido localmente) ──
 
 export function useProjectSpecs(_projectId: string) {
-  // TODO (iter. futura): re-habilitar cuando specs esté en scope
-  /*
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  const key = ["specs", _projectId];
-  const { data } = useQuery({
-    queryKey: key,
-    enabled: !!user && !!_projectId,
-    queryFn: async (): Promise<SpecRef[]> => {
-      const { data, error } = await supabase
-        .from("specs").select("*").eq("project_id", _projectId)
-        .order("position", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map((s: any) => ({ id: s.id, name: s.name }));
-    },
-    initialData: [],
-  });
-  const setSpecs = useCallback(async (next: SpecRef[]) => {
-    qc.setQueryData(key, next);
-  }, [qc, _projectId]);
-  return [data ?? [], setSpecs] as const;
-  */
-  const setSpecs = useCallback(async (_next: SpecRef[]) => {}, []);
-  return [[] as SpecRef[], setSpecs] as const;
+  const [specs, setSpecs] = useLocal<SpecRef[]>(`kosmo.mock.specs.${_projectId}`, []);
+  
+  const updateSpecs = useCallback(async (next: SpecRef[]) => {
+    setSpecs(next);
+  }, [setSpecs]);
+
+  return [specs, updateSpecs] as const;
 }
 
-// ─── Generated phases (fuera del scope actual — código original preservado en comentarios) ──
+// ─── Generated phases (mock data persistido localmente) ──
 
 export function useGenerated(_projectId: string) {
-  // TODO (iter. futura): re-habilitar cuando generated_phases esté en scope
-  /*
-  const qc = useQueryClient();
-  const { user } = useAuth();
-  const key = ["generated", _projectId];
-  const { data, isFetched } = useQuery({
-    queryKey: key,
-    enabled: !!user && !!_projectId,
-    queryFn: async (): Promise<Record<string, boolean>> => {
-      const { data, error } = await supabase
-        .from("generated_phases").select("*").eq("project_id", _projectId);
-      if (error) throw error;
-      const map: Record<string, boolean> = {};
-      (data ?? []).forEach((p: any) => {
-        const k = p.spec_id ? `${p.spec_id}.${p.doc_key}` : p.doc_key;
-        map[k] = !!p.generated;
-      });
-      // ... (lógica de seed specs aquí)
-      return map;
-    },
-    initialData: {},
-  });
-  const setGenerated = useCallback(async (next: Record<string, boolean>) => {
-    // ... (lógica de persistencia aquí)
-  }, [qc, _projectId, user?.id]);
-  return [data ?? {}, setGenerated, { isLoaded: isFetched }] as const;
-  */
-  const setGenerated = useCallback(async (_next: Record<string, boolean>) => {}, []);
-  return [{} as Record<string, boolean>, setGenerated, { isLoaded: true }] as const;
+  const [generated, setGenerated] = useLocal<Record<string, boolean>>(`kosmo.mock.generated.${_projectId}`, {});
+
+  const updateGenerated = useCallback(async (next: Record<string, boolean>) => {
+    // Cuando actualizamos, hacemos merge para no perder el estado anterior
+    setGenerated((prev) => ({ ...prev, ...next }));
+  }, [setGenerated]);
+
+  return [generated, updateGenerated, { isLoaded: true }] as const;
 }
+

@@ -26,6 +26,7 @@ export function ApollonDesignEditor({
   outlineOpen,
   onToggleOutline,
   onRegenerate,
+  isGenerated,
 }: {
   projectId: string;
   scopeKey: string;
@@ -35,6 +36,7 @@ export function ApollonDesignEditor({
   outlineOpen: boolean;
   onToggleOutline: () => void;
   onRegenerate: () => void;
+  isGenerated: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,6 +62,11 @@ export function ApollonDesignEditor({
     // Dynamic import to avoid loading ~2.4 MB upfront
     import("@tumaet/apollon").then((apollon) => {
       if (destroyed || !containerRef.current) return;
+      
+      if (!isGenerated) {
+        setLoading(false);
+        return;
+      }
 
       const { ApollonEditor, UMLDiagramType, ApollonMode, Locale } = apollon;
 
@@ -110,7 +117,7 @@ export function ApollonDesignEditor({
       editorRef.current?.destroy();
       editorRef.current = null;
     };
-  }, [storageKey, designJson]);
+  }, [storageKey, designJson, isGenerated]);
 
   // Manual save (explicit click — model is already auto-persisted, this is UX feedback)
   const onSave = useCallback(() => {
@@ -181,7 +188,7 @@ export function ApollonDesignEditor({
 
       {/* Canvas container */}
       <div className="flex-1 min-h-0 relative">
-        {loading && (
+        {loading && isGenerated && (
           <div className="absolute inset-0 z-10 grid place-items-center bg-white/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
@@ -189,11 +196,24 @@ export function ApollonDesignEditor({
             </div>
           </div>
         )}
-        <div
-          ref={containerRef}
-          className="h-full w-full"
-          style={{ minHeight: "400px" }}
-        />
+        {!isGenerated && !loading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card text-center p-6">
+            <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+              <Layers className="h-8 w-8 text-slate-300" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-800">Diagrama vacío</h3>
+            <p className="mt-1 text-sm text-slate-500 max-w-sm">
+              Este diagrama aún no ha sido generado. Usa el botón "Generar" en la parte inferior para que la IA proponga la arquitectura inicial.
+            </p>
+          </div>
+        )}
+        {isGenerated && (
+          <div
+            ref={containerRef}
+            className="h-full w-full"
+            style={{ minHeight: "400px" }}
+          />
+        )}
       </div>
     </div>
   );

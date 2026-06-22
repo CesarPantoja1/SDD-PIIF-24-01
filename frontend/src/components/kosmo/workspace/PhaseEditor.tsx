@@ -44,7 +44,7 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
-export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate }: { projectId: string; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void }) {
+export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate, isGenerated }: { projectId: string; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void; isGenerated: boolean; }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef<string>("");
   const [dirty, setDirty] = useState(false);
@@ -60,11 +60,18 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
     if (!editorRef.current) return;
     let html = "";
     try { html = localStorage.getItem(storageKey) ?? ""; } catch {}
+    if (!isGenerated) {
+      editorRef.current.innerHTML = "";
+      seedRef.current = "";
+      setDirty(false);
+      return;
+    }
+
     if (!html) html = phaseInitialHtml(doc, specName, variantIdx);
     editorRef.current.innerHTML = html;
     seedRef.current = html;
     setDirty(false);
-  }, [storageKey, doc, specName, variantIdx]);
+  }, [storageKey, doc, specName, variantIdx, isGenerated]);
 
   const exec = (cmd: string, value?: string) => {
     editorRef.current?.focus();
@@ -138,16 +145,29 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
       </div>
 
       {/* Editor surface */}
-      <div
-        ref={editorRef}
-        data-editor-scope={scopeKey}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={onInput}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        className={`prose-kosmo max-w-none px-8 py-7 flex-1 min-h-0 overflow-y-auto kosmo-scroll focus:outline-none ${focused ? "ring-1 ring-indigo-200/60 ring-inset" : ""}`}
-      />
+      <div className="flex-1 min-h-0 relative flex flex-col">
+        {!isGenerated && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card text-center p-6">
+            <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-slate-300" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-800">Documento vacío</h3>
+            <p className="mt-1 text-sm text-slate-500 max-w-sm">
+              Este documento aún no ha sido generado. Usa el botón "Generar" en la parte inferior para que la IA proponga el contenido inicial.
+            </p>
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          data-editor-scope={scopeKey}
+          contentEditable={isGenerated}
+          suppressContentEditableWarning
+          onInput={onInput}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className={`prose-kosmo max-w-none px-8 py-7 flex-1 min-h-0 overflow-y-auto kosmo-scroll focus:outline-none ${focused ? "ring-1 ring-indigo-200/60 ring-inset" : ""}`}
+        />
+      </div>
     </div>
   );
 }

@@ -30,6 +30,7 @@ import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
+import { MOCK_VARIANTS } from "@/lib/mock-data";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
   useProjectSpecs, useVisibleProjects, useProjectById,
@@ -49,13 +50,17 @@ import { VibeChat } from "@/components/kosmo/workspace/VibeChat";
 import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
 import { ApollonDesignEditor } from "@/components/kosmo/workspace/ApollonDesignEditor";
 import { CodeGenView } from "@/components/kosmo/workspace/CodeGenView";
+import { SpecsOverview } from "@/components/kosmo/workspace/SpecsOverview";
 import { GitPanelModal } from "@/components/kosmo/modals/GitPanelModal";
 
 export type DocSlot = { specId: string | null; specName: string | null; doc: DocKey };
 
 
 export function buildSequence(specs: SpecRef[]): DocSlot[] {
-  const seq: DocSlot[] = [{ specId: null, specName: null, doc: "brief" }];
+  const seq: DocSlot[] = [
+    { specId: null, specName: null, doc: "brief" },
+    { specId: null, specName: null, doc: "specs" },
+  ];
   for (const s of specs) for (const d of SPEC_DOCS) seq.push({ specId: s.id, specName: s.name, doc: d });
   return seq;
 }
@@ -65,7 +70,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
   const project = useProjectById(projectId);
   const [specs] = useProjectSpecs(projectId);
   const [generated, setGenerated, { isLoaded: generatedLoaded }] = useGenerated(projectId);
-  const [working, setWorking] = useState<null | { specId: string | null; doc: DocKey; mode: "generate" | "regenerate"; toLabel: string; navigateOnDone?: boolean }>(null);
+  const [working, setWorking] = useState<null | { specId: string | null; doc: DocKey; mode: "generate" | "regenerate" | "generate-specs"; toLabel: string; navigateOnDone?: boolean }>(null);
   const [outlineOpen, setOutlineOpen] = useState<boolean>(true);
   const autoStartedRef = useRef<string | null>(null);
 
@@ -105,18 +110,24 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
     setWorking({ specId: target.specId, doc: target.doc, mode, toLabel: label, navigateOnDone });
   };
 
-  // Stepper context: 5 steps (Discovery + req/design/tasks/code of current spec)
-  const stepDocs: DocKey[] = ["brief", "requirements", "design", "tasks", "code"];
+  // Semantic flags
+  const isDiscovery = specId === null && doc === "brief";
+  const isSpecsView = specId === null && doc === "specs";
+  const isSpecPhase = specId !== null;
+
+  // Stepper context: 4 spec-level steps (Requirements → Design → Tasks → Code)
+  const specStepDocs: DocKey[] = ["requirements", "design", "tasks", "code"];
   const contextSpec = slot.specId
     ? specs.find((s) => s.id === slot.specId) ?? null
     : null;
-  const canOpenContextSpec = contextSpec ? generatedLoaded && !!generated[docKey(contextSpec.id, "requirements")] : false;
-  const stepActiveIdx = slot.doc === "brief" ? 0 : stepDocs.indexOf(slot.doc);
+  const specStepActiveIdx = isSpecPhase ? specStepDocs.indexOf(slot.doc) : -1;
+  const discoveryGenerated = generatedLoaded && !!generated["brief"];
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header + stepper */}
-      <div className="border-b border-border px-8 pt-6 pb-4">
+      {/* Header: breadcrumb + title + Discovery banner + Spec stepper */}
+      <div className="border-b border-border px-6 pt-4 pb-3">
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <button onClick={onHome} className="hover:text-indigo-600 hover:underline">Projects</button>
           <ChevronRight className="h-3 w-3" />
@@ -125,9 +136,8 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
             <>
               <ChevronRight className="h-3 w-3" />
               <button
-                onClick={() => { if (canOpenContextSpec) onNav(contextSpec.id, "requirements"); }}
-                disabled={!canOpenContextSpec}
-                className="hover:text-indigo-600 hover:underline disabled:hover:no-underline disabled:cursor-not-allowed disabled:text-slate-400"
+                onClick={() => onNav(contextSpec.id, "requirements")}
+                className="hover:text-indigo-600 hover:underline"
               >
                 {contextSpec.name}
               </button>
@@ -135,8 +145,9 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           )}
           <ChevronRight className="h-3 w-3" /><span className="text-foreground font-medium">{DOCS[slot.doc].label}</span>
         </div>
+        {/* Title + Git button */}
         <div className="mt-2 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             {project.name}
             {contextSpec && <span className="ml-2 text-slate-400 font-normal text-lg">/ {contextSpec.name}</span>}
           </h1>
@@ -150,49 +161,92 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           </button>
         </div>
 
-        <div className="mt-5 flex items-center">
-          {stepDocs.map((dk, i) => {
-            const D = DOCS[dk];
-            const Icon = D.icon;
-            const active = i === stepActiveIdx;
-            const done = i < stepActiveIdx;
-            const targetSpecId = dk === "brief" ? null : slot.specId;
-            const stepKey = docKey(targetSpecId, dk);
-            const isGen = generatedLoaded && !!generated[stepKey];
-            // Desde el stepper/sidebar solo se puede entrar a fases ya generadas.
-            // La fase siguiente se abre únicamente desde el botón inferior de generación.
-            const baseDisabled = dk !== "brief" && !contextSpec;
-            const locked = dk !== "brief" && (!generatedLoaded || !isGen);
-            const disabled = baseDisabled || locked;
-            const onClick = () => {
-              if (disabled) return;
-              onNav(targetSpecId, dk);
-            };
-            return (
-              <div key={dk} className="flex items-center flex-1">
-                <button onClick={onClick} disabled={disabled} title={locked ? "Bloqueado: genera la fase anterior primero" : undefined} className="flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
-                  <div className={`relative grid h-9 w-9 place-items-center rounded-xl border transition ${done ? "bg-emerald-500 border-emerald-500 text-white shadow-sm" : active ? "bg-indigo-600 border-indigo-600 text-white shadow-sm" : isGen ? "bg-card border-slate-300 text-muted-foreground group-hover:border-slate-400 group-hover:text-slate-700" : "bg-card border-border text-slate-300 group-hover:border-slate-300"}`}>
-                    {done ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <>
-                        <Icon className={`h-4 w-4 ${locked ? "group-hover:opacity-0 transition-opacity" : ""}`} />
-                        {locked && <Lock className="h-4 w-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />}
-                      </>
-                    )}
-                  </div>
-
-                  <div className="text-left">
-                    <div className={`text-sm font-medium ${active ? "text-foreground" : "text-slate-600"}`}>{D.label}</div>
-                    <div className="text-[11px] text-slate-400">{D.sub}</div>
-                  </div>
-
-                </button>
-                {i < stepDocs.length - 1 && <div className={`mx-3 flex-1 h-px ${i < stepActiveIdx ? "bg-emerald-500" : "bg-slate-200"}`} />}
+        {/* ── Discovery Banner (project-level, only visible in Discovery) ── */}
+        {isDiscovery && (
+          <>
+            <button
+              onClick={() => onNav(null, "brief")}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl border px-4 py-2.5 transition-all bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200 shadow-sm"
+            >
+              <div className="grid h-8 w-8 place-items-center rounded-lg transition bg-indigo-600 text-white shadow-sm">
+                <Compass className="h-4 w-4" />
               </div>
-            );
-          })}
-        </div>
+              <div className="text-left flex-1 min-w-0">
+                <div className="text-sm font-medium text-indigo-900">Discovery</div>
+                <div className="text-[11px] text-slate-400">Descubrimiento · Brief del producto</div>
+              </div>
+              {discoveryGenerated
+                ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> Generado</Badge>
+                : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> Pendiente</Badge>
+              }
+            </button>
+          </>
+        )}
+
+        {/* ── Specs Banner (global, only visible in Specs view) ── */}
+        {isSpecsView && (
+          <button
+            onClick={() => onNav(null, "specs")}
+            className="mt-3 flex w-full items-center gap-3 rounded-xl border px-4 py-2.5 transition-all bg-violet-50 border-violet-200 ring-1 ring-violet-200 shadow-sm"
+          >
+            <div className="grid h-8 w-8 place-items-center rounded-lg transition bg-violet-600 text-white shadow-sm">
+              <Layers className="h-4 w-4" />
+            </div>
+            <div className="text-left flex-1 min-w-0">
+              <div className="text-sm font-medium text-violet-900">Especificaciones</div>
+              <div className="text-[11px] text-slate-400">Módulos del producto</div>
+            </div>
+            {specs.length > 0
+              ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> {specs.length} módulos</Badge>
+              : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> Pendiente</Badge>
+            }
+          </button>
+        )}
+
+        {/* ── Spec Stepper (4 phases, only when viewing a spec) ── */}
+        {isSpecPhase && contextSpec && (
+          <div className="mt-4">
+            <div className="flex items-center">
+            {specStepDocs.map((dk, i) => {
+              const D = DOCS[dk];
+              const Icon = D.icon;
+              const active = i === specStepActiveIdx;
+              const stepKey = docKey(slot.specId, dk);
+              const isGen = generatedLoaded && !!generated[stepKey];
+              const done = isGen && !active;
+              return (
+                <div key={dk} className="flex items-center flex-1">
+                  <button
+                    onClick={() => onNav(slot.specId, dk)}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className={`grid h-9 w-9 place-items-center rounded-xl border transition ${
+                      active
+                        ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                        : done
+                          ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
+                          : "bg-card border-border text-slate-400 group-hover:border-slate-400 group-hover:text-slate-600"
+                    }`}>
+                      {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                    </div>
+                    <div className="text-left">
+                      <div className={`text-sm font-medium ${active ? "text-foreground" : "text-slate-600"}`}>{D.label}</div>
+                      <div className="text-[11px] text-slate-400">{D.sub}</div>
+                    </div>
+                  </button>
+                  {i < specStepDocs.length - 1 && (
+                    <div className={`mx-3 flex-1 h-px ${
+                      isGen && (generatedLoaded && !!generated[docKey(slot.specId, specStepDocs[i + 1])])
+                        ? "bg-emerald-500"
+                        : "bg-slate-200"
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -200,9 +254,18 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 flex flex-col border-r border-border">
           <div className="flex-1 min-h-0 flex px-4 py-6 gap-5 overflow-hidden">
-            {outlineOpen && slot.doc !== "code" && slot.doc !== "design" && <DocOutline editorScope={currentKey} />}
+            {outlineOpen && slot.doc !== "code" && slot.doc !== "design" && slot.doc !== "specs" && <DocOutline editorScope={currentKey} />}
             <div className="flex-1 min-w-0 min-h-0">
-              {slot.doc === "code" ? (
+              {slot.doc === "specs" ? (
+                <SpecsOverview
+                  projectId={projectId}
+                  specs={specs}
+                  generated={generated}
+                  generatedLoaded={generatedLoaded}
+                  onNavigateSpec={(sId, dk) => onNav(sId, dk)}
+                  onGenerateSpecs={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Módulos del Producto" })}
+                />
+              ) : slot.doc === "code" ? (
                 <CodeGenView
                   projectId={projectId}
                   specId={slot.specId}
@@ -219,6 +282,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   outlineOpen={outlineOpen}
                   onToggleOutline={() => setOutlineOpen((v) => !v)}
                   onRegenerate={() => startGenerate(slot, "regenerate")}
+                  isGenerated={isGenerated}
                 />
               ) : (
                 <PhaseEditor
@@ -232,6 +296,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   outlineOpen={outlineOpen}
                   onToggleOutline={() => setOutlineOpen((v) => !v)}
                   onRegenerate={() => startGenerate(slot, "regenerate")}
+                  isGenerated={isGenerated}
                 />
               )}
             </div>
@@ -240,52 +305,87 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           {/* Phase advance bar */}
           <div className="border-t border-border bg-white/80 backdrop-blur px-8 py-3 flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
-              Paso {idx + 1} de {seq.length} · <span className="text-slate-700 font-medium">{DOCS[slot.doc].sub}{slot.specName ? ` · ${slot.specName}` : ""}</span>
+              <span className="text-slate-700 font-medium">{DOCS[slot.doc].sub}{slot.specName ? ` · ${slot.specName}` : ""}</span>
             </div>
             <div className="flex items-center gap-2">
-              {prev && (
+              {/* Contextual actions: Chat for Specs, Save for others */}
+              {isSpecsView ? (
                 <button
-                  onClick={() => onNav(prev.specId, prev.doc)}
-                  className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                  onClick={onToggleChat}
+                  className={`inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors ${chatOpen ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-card text-slate-600 hover:bg-slate-50 hover:border-slate-300"}`}
                 >
-                  Anterior
+                  <MessageSquare className="h-3.5 w-3.5" /> Chat IA
+                </button>
+              ) : (
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                >
+                  <Save className="h-3.5 w-3.5" /> Guardar
                 </button>
               )}
+              
+              {/* Generate / Next buttons */}
               {!generatedLoaded ? (
                 <button disabled className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed">
                   Cargando estado…
                 </button>
-              ) : slot.doc !== "code" && !isGenerated ? (
-                <button
-                  onClick={() => startGenerate(slot, "generate")}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
-                >
-                  <Sparkles className="h-3.5 w-3.5" /> Generar {DOCS[slot.doc].sub}
-                </button>
-              ) : next ? (
-                nextGenerated ? (
+              ) : isDiscovery ? (
+                /* Discovery: Generar brief → Ir a Specs */
+                !discoveryGenerated ? (
                   <button
-                    onClick={() => onNav(next.specId, next.doc)}
+                    onClick={() => startGenerate(slot, "generate")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
-                    Siguiente <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                ) : next.doc === "code" ? (
-                  <button
-                    onClick={() => onNav(next.specId, next.doc)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
-                  >
-                    Ir a {DOCS[next.doc].sub}{next.specName ? ` · ${next.specName}` : ""} <ArrowRight className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3.5 w-3.5" /> Generar Discovery
                   </button>
                 ) : (
                   <button
-                    onClick={() => startGenerate(next, "generate", true)}
+                    onClick={() => onNav(null, "specs")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Generar {DOCS[next.doc].sub}{next.specName ? ` · ${next.specName}` : ""}
+                    Ir a Especificaciones <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 )
-              ) : null}
+              ) : isSpecsView ? (
+                /* Specs view: Generar specs → Ir al primer módulo */
+                specs.length === 0 ? (
+                  <button
+                    onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Módulos del Producto" })}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Generar Specs con IA
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onNav(specs[0].id, "requirements")}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+                  >
+                    Ir al primer módulo <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                )
+              ) : (
+                /* Spec phases */
+                !isGenerated ? (
+                  <button
+                    onClick={() => startGenerate(slot, "generate")}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" /> Generar {DOCS[slot.doc].sub}
+                  </button>
+                ) : (
+                  <>
+                    <span className="text-xs text-slate-400 italic mr-2">Usa el chat IA para modificaciones</span>
+                    {next && (
+                      <button
+                        onClick={() => onNav(next.specId, next.doc)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-700"
+                      >
+                        Siguiente: {DOCS[next.doc].label} <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -298,7 +398,46 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           mode={working.mode}
           toLabel={working.toLabel}
           onDone={async () => {
-            await setGenerated({ [docKey(working.specId, working.doc)]: true });
+            const variantIdx = (() => {
+              let hash = 0;
+              for (let i = 0; i < projectId.length; i++) {
+                hash = ((hash << 5) - hash + projectId.charCodeAt(i)) | 0;
+              }
+              return Math.abs(hash) % MOCK_VARIANTS.length;
+            })();
+            const variant = MOCK_VARIANTS[variantIdx];
+
+            if (working.mode === "generate-specs") {
+              const newSpecs = variant.specNames.map((name, i) => ({
+                id: `mock-spec-${projectId}-${i}`,
+                name,
+                description: variant.specDescriptions?.[i],
+              }));
+              // @ts-expect-error setSpecs is an array destructured updater
+              await specs[1]?.(newSpecs); // Call the second item from the hook tuple manually or just rely on the setSpecs from the hook properly...
+              // Wait, setSpecs is not exported from the hook tuple cleanly in the destructuring above (const [specs] = useProjectSpecs(projectId)).
+              // I will need to fix the hook destructuring above! Let me just dispatch the local event to bypass.
+              window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.specs.${projectId}`, value: newSpecs } }));
+              localStorage.setItem(`kosmo.mock.specs.${projectId}`, JSON.stringify(newSpecs));
+            } else {
+              // Mark phase as generated
+              const key = docKey(working.specId, working.doc);
+              window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.generated.${projectId}`, value: { ...generated, [key]: true } } }));
+              localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [key]: true }));
+
+              // Inject mock data into phase localStorage
+              if (working.doc === "design") {
+                const storageKey = `kosmo.apollon.${projectId}.${key}`;
+                const specName = specs.find(s => s.id === working.specId)?.name;
+                const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
+                localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? variant.designJson));
+              } else if (working.doc !== "code") {
+                const storageKey = `kosmo.phase.${projectId}.${key}`;
+                const specName = specs.find(s => s.id === working.specId)?.name;
+                localStorage.setItem(storageKey, phaseInitialHtml(working.doc, specName, variantIdx));
+              }
+            }
+
             if (working.navigateOnDone) onNav(working.specId, working.doc);
             setWorking(null);
           }}

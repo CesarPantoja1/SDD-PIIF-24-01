@@ -1008,6 +1008,7 @@ export type MockVariant = {
   name: string;
   description: string;
   specNames: string[];
+  specDescriptions?: string[];
   briefHtml: string;
   requirementsHtml: string;
   /** Optional per-spec requirements overrides, keyed by spec name. */
@@ -1024,6 +1025,7 @@ export const MOCK_VARIANTS: MockVariant[] = [
     name: MOCK_PROJECT_NAME,
     description: MOCK_PROJECT_DESCRIPTION,
     specNames: [MOCK_SPEC_NAME],
+    specDescriptions: ["Módulo principal para agendamiento, reprogramación y recordatorios automáticos de citas médicas."],
     briefHtml: MOCK_BRIEF_HTML,
     requirementsHtml: MOCK_REQUIREMENTS_HTML,
     designJson: MOCK_DESIGN_JSON,
@@ -1032,6 +1034,10 @@ export const MOCK_VARIANTS: MockVariant[] = [
     name: MOCK2_PROJECT_NAME,
     description: MOCK2_PROJECT_DESCRIPTION,
     specNames: MOCK2_SPEC_NAMES,
+    specDescriptions: [
+      "Módulo para gestionar la biblioteca personal de cada lector y buscar libros geolocalizados por zona.",
+      "Módulo para coordinar solicitudes de préstamo, entregas, recordatorios de devolución y sistema de reputación."
+    ],
     briefHtml: MOCK2_BRIEF_HTML,
     requirementsHtml: MOCK2_REQUIREMENTS_HTML,
     requirementsBySpec: MOCK2_REQUIREMENTS_BY_SPEC,

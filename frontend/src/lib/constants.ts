@@ -93,6 +93,7 @@ export const PROJECTS: ProjectMeta[] = [];
 
 export const DOCS: Record<DocKey, { label: string; sub: string; file: string; icon: any }> = {
   brief: { label: "Discovery", sub: "Descubrimiento", file: "brief.md", icon: Compass },
+  specs: { label: "Especificaciones", sub: "Módulos del producto", file: "specs.md", icon: Layers },
   requirements: { label: "Requirements", sub: "Requerimientos", file: "requirements.md", icon: ClipboardList },
   design: { label: "Design", sub: "Diseño Técnico", file: "design.md", icon: Layers },
   tasks: { label: "Tasks", sub: "Tareas", file: "tasks.md", icon: ListChecks },
