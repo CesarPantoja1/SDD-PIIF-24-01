@@ -47,23 +47,27 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
   const all = Object.keys(PROVIDERS) as ProviderKey[];
   const withKeys = all.filter((k) => !!keys[k]?.trim());
   const currentHasKey = !!keys[currentProvider]?.trim();
-
-  if (!currentHasKey && withKeys.length === 0) {
-    return all.map((k) => (
-      <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>
-    ));
-  }
+  const seen = new Set(withKeys);
 
   const options = withKeys.map((k) => (
     <option key={k} value={k}>{PROVIDERS[k].label}</option>
   ));
 
   if (!currentHasKey) {
+    seen.add(currentProvider);
     options.push(
       <option key={currentProvider} value={currentProvider} disabled>
         {PROVIDERS[currentProvider].label} (sin API Key)
       </option>,
     );
+  }
+
+  for (const k of all) {
+    if (!seen.has(k)) {
+      options.push(
+        <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>,
+      );
+    }
   }
 
   return options;

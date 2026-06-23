@@ -30,6 +30,7 @@ import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
+import { useAuth } from "@/hooks/use-auth";
 import { MOCK_VARIANTS } from "@/lib/mock-data";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
@@ -67,11 +68,15 @@ export function buildSequence(specs: SpecRef[]): DocSlot[] {
 
 
 export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNav, onHome, chatOpen, onToggleChat, onCloseChat, gitOpen, onToggleGit }: { projectId: string; specId: string | null; doc: DocKey; autoStartBrief?: boolean; onNav: (specId: string | null, doc: DocKey) => void; onHome: () => void; chatOpen: boolean; onToggleChat: () => void; onCloseChat: () => void; gitOpen: boolean; onToggleGit: () => void }) {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+  const [agents] = useAgentPrefs();
   const project = useProjectById(projectId);
   const [specs] = useProjectSpecs(projectId);
   const [generated, setGenerated, { isLoaded: generatedLoaded }] = useGenerated(projectId);
   const [working, setWorking] = useState<null | { specId: string | null; doc: DocKey; mode: "generate" | "regenerate" | "generate-specs"; toLabel: string; navigateOnDone?: boolean }>(null);
   const [outlineOpen, setOutlineOpen] = useState<boolean>(true);
+  const [editorKey, setEditorKey] = useState(0);
   const autoStartedRef = useRef<string | null>(null);
 
   // Auto-arrancar el modal de Descubrimiento SOLO cuando el padre lo indica
@@ -106,6 +111,10 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
   const nextGenerated = generatedLoaded && next ? !!generated[docKey(next.specId, next.doc)] : false;
 
   const startGenerate = (target: DocSlot, mode: "generate" | "regenerate", navigateOnDone = false) => {
+    console.log(
+      "[Workspace] startGenerate",
+      JSON.stringify({ doc: target.doc, mode, hasToken: !!token, projectId, provider: agents.discovery.creator.provider, model: agents.discovery.creator.model }),
+    );
     const label = `${DOCS[target.doc].sub}${target.specName ? ` · ${target.specName}` : ""}`;
     setWorking({ specId: target.specId, doc: target.doc, mode, toLabel: label, navigateOnDone });
   };
@@ -286,6 +295,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 />
               ) : (
                 <PhaseEditor
+                  key={isDiscovery ? editorKey : undefined}
                   projectId={projectId}
                   scopeKey={currentKey}
                   doc={slot.doc}
@@ -397,7 +407,11 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
         <AgentWorkingModal
           mode={working.mode}
           toLabel={working.toLabel}
-          onDone={async () => {
+          sseToken={working.mode === "generate" && working.doc === "brief" ? token : null}
+          sseProjectId={working.mode === "generate" && working.doc === "brief" ? projectId : undefined}
+          sseProvider={working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.provider : undefined}
+          sseModel={working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.model : undefined}
+          onDone={async (content?: string) => {
             const variantIdx = (() => {
               let hash = 0;
               for (let i = 0; i < projectId.length; i++) {
@@ -413,28 +427,26 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 name,
                 description: variant.specDescriptions?.[i],
               }));
-              // @ts-expect-error setSpecs is an array destructured updater
-              await specs[1]?.(newSpecs); // Call the second item from the hook tuple manually or just rely on the setSpecs from the hook properly...
-              // Wait, setSpecs is not exported from the hook tuple cleanly in the destructuring above (const [specs] = useProjectSpecs(projectId)).
-              // I will need to fix the hook destructuring above! Let me just dispatch the local event to bypass.
               window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.specs.${projectId}`, value: newSpecs } }));
               localStorage.setItem(`kosmo.mock.specs.${projectId}`, JSON.stringify(newSpecs));
             } else {
-              // Mark phase as generated
-              const key = docKey(working.specId, working.doc);
-              window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.generated.${projectId}`, value: { ...generated, [key]: true } } }));
-              localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [key]: true }));
+              const generatedKey = docKey(working.specId, working.doc);
+              localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [generatedKey]: true }));
 
-              // Inject mock data into phase localStorage
-              if (working.doc === "design") {
-                const storageKey = `kosmo.apollon.${projectId}.${key}`;
+              // Save real content from SSE, or fall back to mock
+              if (content && working.doc === "brief") {
+                const phaseStorageKey = `kosmo.phase.${projectId}.${generatedKey}`;
+                localStorage.setItem(phaseStorageKey, mdToHtml(content));
+                setEditorKey(k => k + 1);
+              } else if (working.doc === "design") {
+                const storageKey = `kosmo.apollon.${projectId}.${generatedKey}`;
                 const specName = specs.find(s => s.id === working.specId)?.name;
                 const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
-                localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? variant.designJson));
+                localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));
               } else if (working.doc !== "code") {
-                const storageKey = `kosmo.phase.${projectId}.${key}`;
+                const phaseStorageKey = `kosmo.phase.${projectId}.${generatedKey}`;
                 const specName = specs.find(s => s.id === working.specId)?.name;
-                localStorage.setItem(storageKey, phaseInitialHtml(working.doc, specName, variantIdx));
+                localStorage.setItem(phaseStorageKey, phaseInitialHtml(working.doc, specName, variantIdx));
               }
             }
 

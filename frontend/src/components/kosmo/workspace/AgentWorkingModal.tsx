@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, Eye, Sparkles, CheckCircle2, Loader2, X, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/kosmo/common";
+import { streamDiscovery, type Evaluation } from "@/lib/api/api";
 
 /* ── Data model ── */
 
@@ -13,12 +14,6 @@ type IterationStep = {
   passed: boolean;
   issues?: string[];
 };
-
-/* Each "visual step" maps to a render phase:
-   0 → creator row of iteration 1
-   1 → reviewer row of iteration 1
-   2 → creator row of iteration 2
-   … and so on. Total visual steps = iterations.length * 2 */
 
 const SCRIPTS: Record<"generate" | "regenerate" | "generate-specs", IterationStep[]> = {
   generate: [
@@ -96,31 +91,109 @@ export function AgentWorkingModal({
   toLabel,
   onDone,
   onCancel,
+  sseToken,
+  sseProjectId,
+  sseProvider,
+  sseModel,
 }: {
   mode: "generate" | "regenerate" | "generate-specs";
   toLabel: string;
-  onDone: () => void;
+  onDone: (content?: string) => void;
   onCancel: () => void;
+  sseToken?: string | null;
+  sseProjectId?: string;
+  sseProvider?: string;
+  sseModel?: string;
 }) {
-  const iterations = SCRIPTS[mode];
-  const totalVisualSteps = iterations.length * 2;
-  const [step, setStep] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const useSSE = !!(sseToken && sseProjectId && sseProvider && sseModel && mode === "generate");
+  const isDiscoverySSE = useSSE;
 
+  // debug
   useEffect(() => {
-    if (step < totalVisualSteps) {
-      const t = setTimeout(() => setStep((s) => s + 1), STEP_MS);
+    console.log(
+      "[AgentWorkingModal]",
+      JSON.stringify({
+        hasToken: !!sseToken,
+        hasProject: !!sseProjectId,
+        hasProvider: !!sseProvider,
+        hasModel: !!sseModel,
+        mode,
+        useSSE,
+        isDiscoverySSE,
+      }),
+    );
+  }, [sseToken, sseProjectId, sseProvider, sseModel, mode, useSSE, isDiscoverySSE]);
+
+  // SSE state
+  const [sseEvaluations, setSseEvaluations] = useState<Evaluation[]>([]);
+  const [sseFinished, setSseFinished] = useState(false);
+  const [sseContent, setSseContent] = useState<string | null>(null);
+  const [sseError, setSseError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Mock state
+  const mockIterations = SCRIPTS[mode];
+  const totalMockSteps = mockIterations.length * 2;
+  const [mockStep, setMockStep] = useState(0);
+  const mockFinished = mockStep >= totalMockSteps;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const verb = mode === "regenerate" ? "Regenerando" : "Generando";
+  const finished = isDiscoverySSE ? sseFinished : mockFinished;
+  const iterationsCount = isDiscoverySSE ? sseEvaluations.length : mockIterations.length;
+
+  // Compute approved/total from last evaluation
+  let lastApproved = 0;
+  let lastTotal = 0;
+  if (isDiscoverySSE && sseEvaluations.length > 0) {
+    const last = sseEvaluations[sseEvaluations.length - 1];
+    lastApproved = last.criteria?.filter((c) => c.passed).length ?? 0;
+    lastTotal = last.criteria?.length ?? 0;
+  } else if (!isDiscoverySSE && mockIterations.length > 0) {
+    const last = mockIterations[mockIterations.length - 1];
+    lastApproved = last.approved;
+    lastTotal = last.total;
+  }
+
+  // SSE connection
+  useEffect(() => {
+    if (!isDiscoverySSE) return;
+
+    const ctrl = streamDiscovery(
+      sseToken!,
+      sseProjectId!,
+      sseProvider!,
+      sseModel!,
+      (evaluation) => {
+        setSseEvaluations((prev) => [...prev, evaluation]);
+      },
+      (content) => {
+        setSseContent(content);
+        setSseFinished(true);
+      },
+      (error) => {
+        setSseError(error);
+        setSseFinished(true);
+      },
+    );
+    abortRef.current = ctrl;
+
+    return () => ctrl.abort();
+  }, [isDiscoverySSE, sseToken, sseProjectId]);
+
+  // Mock timer
+  useEffect(() => {
+    if (isDiscoverySSE) return;
+    if (mockStep < totalMockSteps) {
+      const t = setTimeout(() => setMockStep((s) => s + 1), STEP_MS);
       return () => clearTimeout(t);
     }
-  }, [step, totalVisualSteps]);
+  }, [mockStep, totalMockSteps, isDiscoverySSE]);
 
+  // Auto scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [step]);
-
-  const verb = mode === "regenerate" ? "Regenerando" : "Generando";
-  const finished = step >= totalVisualSteps;
-  const lastIteration = iterations[iterations.length - 1];
+  }, [mockStep, sseEvaluations]);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 backdrop-blur-sm p-4">
@@ -132,97 +205,195 @@ export function AgentWorkingModal({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-slate-800 tracking-tight">
-              {finished ? "Propuesta lista" : `${verb}…`}
+              {finished ? (sseError ? "Error" : "Propuesta lista") : `${verb}…`}
             </h3>
             <p className="text-xs text-muted-foreground truncate">{toLabel}</p>
           </div>
           {!finished && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
         </div>
 
-        {/* ── Iteration timeline ── */}
+        {/* ── Body ── */}
         <div ref={scrollRef} className="max-h-96 overflow-y-auto px-5 py-4 space-y-1 bg-slate-50/50">
-          {iterations.map((iter, iterIdx) => {
-            const creatorStep = iterIdx * 2;
-            const reviewerStep = iterIdx * 2 + 1;
-            const showCreator = step > creatorStep;
-            const showReviewer = step > reviewerStep;
+          {isDiscoverySSE ? (
+            /* ── SSE Stream ── */
+            <>
+              {sseEvaluations.map((ev, evIdx) => {
+                const passed = ev.criteria?.filter((c) => c.passed).length ?? 0;
+                const total = ev.criteria?.length ?? 0;
+                const isLast = evIdx === sseEvaluations.length - 1;
+                const showReviewer = !isLast || sseFinished || ev.result !== "unknown";
 
-            if (step <= creatorStep) return null;
-
-            return (
-              <div key={iter.iteration}>
-                {/* Iteration divider */}
-                <div className="flex items-center gap-2 pt-3 pb-2">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Iteración {iter.iteration}
-                  </span>
-                  <div className="h-px flex-1 bg-slate-200" />
-                </div>
-
-                {/* Creator row */}
-                {showCreator && (
-                  <div className="flex items-start gap-2.5 py-1.5">
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-violet-100 text-violet-700">
-                      <Bot className="h-3.5 w-3.5" />
+                return (
+                  <div key={ev.iteration}>
+                    <div className="flex items-center gap-2 pt-3 pb-2">
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Iteración {ev.iteration + 1}
+                      </span>
+                      <div className="h-px flex-1 bg-slate-200" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 mb-0.5">Creador</div>
-                      <div className="inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border bg-card border-border text-slate-700">
-                        {iter.creator}
+
+                    {/* Creator */}
+                    <div className="flex items-start gap-2.5 py-1.5">
+                      <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-violet-100 text-violet-700">
+                        <Bot className="h-3.5 w-3.5" />
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Reviewer row */}
-                {showReviewer && (
-                  <div className="flex items-start gap-2.5 py-1.5">
-                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
-                      <Eye className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">Revisor</div>
-                      <div className={`inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border ${
-                        iter.passed
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                          : "bg-amber-50 border-amber-200 text-amber-900"
-                      }`}>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span>{iter.reviewer}</span>
-                          <Badge tone={iter.passed ? "green" : "amber"}>
-                            {iter.passed ? <CheckCircle2 className="h-3 w-3 mr-0.5" /> : <AlertTriangle className="h-3 w-3 mr-0.5" />}
-                            {iter.approved}/{iter.total} criterios
-                          </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 mb-0.5">Creador</div>
+                        <div className="inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border bg-card border-border text-slate-700">
+                          {ev.iteration === 0 ? "Generando contenido inicial…" : "Corrigiendo según feedback del revisor…"}
                         </div>
-                        {iter.issues && iter.issues.length > 0 && (
-                          <ul className="mt-1.5 space-y-0.5">
-                            {iter.issues.map((issue, j) => (
-                              <li key={j} className="flex items-start gap-1 text-[11px] text-amber-800">
-                                <span className="shrink-0 mt-px">⚠</span>
-                                <span>{issue}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
 
-          {/* Typing indicator */}
-          {!finished && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pl-1 pt-2">
-              <span className="inline-flex gap-0.5">
-                <TypingDot delay={0} />
-                <TypingDot delay={150} />
-                <TypingDot delay={300} />
-              </span>
-              {step % 2 === 0 ? "Creador escribiendo…" : "Revisor analizando…"}
+                    {/* Reviewer */}
+                    {showReviewer && (
+                      <div className="flex items-start gap-2.5 py-1.5">
+                        <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${
+                          ev.result === "satisfied" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                        }`}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${
+                            ev.result === "satisfied" ? "text-emerald-600" : "text-amber-600"
+                          }`}>Revisor</div>
+                          <div className={`inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border ${
+                            ev.result === "satisfied"
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                              : "bg-amber-50 border-amber-200 text-amber-900"
+                          }`}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span>{ev.explanation}</span>
+                              <Badge tone={ev.result === "satisfied" ? "green" : "amber"}>
+                                {ev.result === "satisfied" ? <CheckCircle2 className="h-3 w-3 mr-0.5" /> : <AlertTriangle className="h-3 w-3 mr-0.5" />}
+                                {passed}/{total} criterios
+                              </Badge>
+                            </div>
+                            {ev.criteria?.filter((c) => !c.passed).length > 0 && (
+                              <ul className="mt-1.5 space-y-0.5">
+                                {ev.criteria.filter((c) => !c.passed).map((c, j) => (
+                                  <li key={j} className="flex items-start gap-1 text-[11px] text-amber-800">
+                                    <span className="shrink-0 mt-px">⚠</span>
+                                    <span>{c.gap || c.name}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {!sseFinished && (
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground pl-1 pt-2">
+                  <span className="inline-flex gap-0.5">
+                    <TypingDot delay={0} />
+                    <TypingDot delay={150} />
+                    <TypingDot delay={300} />
+                  </span>
+                  {sseEvaluations.length === 0 ? "Creador escribiendo…" : sseEvaluations.length % 2 === 0 ? "Creador escribiendo…" : "Revisor analizando…"}
+                </div>
+              )}
+
+              {sseError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-2 text-xs text-red-700">
+                  {sseError}
+                </div>
+              )}
+            </>
+          ) : mode === "generate" && sseToken && sseProjectId ? (
+            /* ── Error: Discovery should use SSE but provider/model missing ── */
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-600 mb-3">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <h4 className="text-sm font-semibold text-amber-800 mb-1">Agente no configurado</h4>
+              <p className="text-xs text-amber-700 max-w-xs leading-relaxed">
+                No se encontró la configuración del agente de Discovery (proveedor/modelo).
+                Configurá los agentes en Settings → Coding Agents → Discovery.
+              </p>
             </div>
+          ) : (
+            /* ── Mock Script ── */
+            <>
+              {mockIterations.map((iter, iterIdx) => {
+                const creatorStep = iterIdx * 2;
+                const reviewerStep = iterIdx * 2 + 1;
+                const showCreator = mockStep > creatorStep;
+                const showReviewer = mockStep > reviewerStep;
+
+                if (mockStep <= creatorStep) return null;
+
+                return (
+                  <div key={iter.iteration}>
+                    <div className="flex items-center gap-2 pt-3 pb-2">
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Iteración {iter.iteration}</span>
+                      <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+
+                    {showCreator && (
+                      <div className="flex items-start gap-2.5 py-1.5">
+                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-violet-100 text-violet-700">
+                          <Bot className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 mb-0.5">Creador</div>
+                          <div className="inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border bg-card border-border text-slate-700">{iter.creator}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {showReviewer && (
+                      <div className="flex items-start gap-2.5 py-1.5">
+                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-emerald-100 text-emerald-700">
+                          <Eye className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">Revisor</div>
+                          <div className={`inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border ${
+                            iter.passed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-amber-50 border-amber-200 text-amber-900"
+                          }`}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span>{iter.reviewer}</span>
+                              <Badge tone={iter.passed ? "green" : "amber"}>
+                                {iter.passed ? <CheckCircle2 className="h-3 w-3 mr-0.5" /> : <AlertTriangle className="h-3 w-3 mr-0.5" />}
+                                {iter.approved}/{iter.total} criterios
+                              </Badge>
+                            </div>
+                            {iter.issues && iter.issues.length > 0 && (
+                              <ul className="mt-1.5 space-y-0.5">
+                                {iter.issues.map((issue, j) => (
+                                  <li key={j} className="flex items-start gap-1 text-[11px] text-amber-800">
+                                    <span className="shrink-0 mt-px">⚠</span>
+                                    <span>{issue}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {!mockFinished && (
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground pl-1 pt-2">
+                  <span className="inline-flex gap-0.5">
+                    <TypingDot delay={0} />
+                    <TypingDot delay={150} />
+                    <TypingDot delay={300} />
+                  </span>
+                  {mockStep % 2 === 0 ? "Creador escribiendo…" : "Revisor analizando…"}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -230,7 +401,9 @@ export function AgentWorkingModal({
         <div className="px-5 py-3 border-t border-border bg-card flex items-center justify-between gap-2">
           <p className="text-[11px] text-muted-foreground">
             {finished
-              ? `Completado en ${iterations.length} ${iterations.length === 1 ? "iteración" : "iteraciones"}. ${lastIteration.approved}/${lastIteration.total} criterios aprobados.`
+              ? sseError
+                ? "Ocurrió un error. Intenta de nuevo."
+                : `Completado en ${iterationsCount} ${iterationsCount === 1 ? "iteración" : "iteraciones"}. ${lastApproved}/${lastTotal} criterios aprobados.`
               : "Puedes cancelar en cualquier momento."}
           </p>
           <div className="flex items-center gap-2">
@@ -241,11 +414,11 @@ export function AgentWorkingModal({
               <X className="h-3.5 w-3.5" /> Cancelar
             </button>
             <button
-              onClick={onDone}
+              onClick={() => onDone(isDiscoverySSE ? (sseContent ?? undefined) : undefined)}
               disabled={!finished}
               className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check className="h-3.5 w-3.5" /> Aceptar
+              <Check className="h-3.5 w-3.5" /> Revisar propuesta
             </button>
           </div>
         </div>
@@ -262,5 +435,3 @@ function TypingDot({ delay }: { delay: number }) {
     />
   );
 }
-
-/* ============== CODE GENERATION VIEW ============== */

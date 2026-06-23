@@ -9,6 +9,10 @@
 
 import { apiClient } from "./client";
 
+const BACKEND_URL =
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
+  "http://localhost:8000";
+
 // ─── Types (mirror backend Pydantic schemas) ──────────────────────────────
 
 export type ProfileResponse = {
@@ -115,4 +119,111 @@ export async function deleteProject(
   projectId: string
 ): Promise<void> {
   await apiClient.delete(`/projects/${projectId}`, token);
+}
+
+// ─── Agents ─────────────────────────────────────────────────────────────────
+
+export type AgentConfigResponse = {
+  configs: Record<string, { provider: string; model: string; system_prompt: string }>;
+  rubrics?: Record<string, string>;
+};
+
+export type Evaluation = {
+  iteration: number;
+  result: string;
+  explanation: string;
+  criteria: { name: string; passed: boolean; gap?: string }[];
+};
+
+/** GET /agents/configs – get agent configs with defaults */
+export async function getAgentConfigs(token: string): Promise<AgentConfigResponse> {
+  return apiClient.get<AgentConfigResponse>("/agents/configs", token);
+}
+
+/** PUT /agents/configs/{slot_key} – save agent config */
+export async function saveAgentConfig(
+  token: string,
+  slotKey: string,
+  body: { provider: string; model: string; system_prompt: string }
+): Promise<{ slot_key: string; status: string }> {
+  return apiClient.put(`/agents/configs/${slotKey}`, body, token);
+}
+
+/** SSE: generate discovery with real-time evaluations */
+export function streamDiscovery(
+  token: string,
+  projectId: string,
+  provider: string,
+  model: string,
+  onEvaluation: (data: Evaluation) => void,
+  onComplete: (content: string) => void,
+  onError: (error: string) => void,
+): AbortController {
+  const controller = new AbortController();
+  const url = `${BACKEND_URL}/api/v1/agents/projects/${projectId}/generate/stream`;
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ provider, model }),
+    signal: controller.signal,
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const text = await response.text();
+        let detail = text;
+        try { detail = JSON.parse(text).detail; } catch {}
+        onError(detail);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) { onError("No response body"); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let eventType = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (eventType === "rubric_evaluation") {
+              try { onEvaluation(JSON.parse(data)); } catch {}
+            } else if (eventType === "complete") {
+              try {
+                const parsed = JSON.parse(data);
+                onComplete(parsed.content || "");
+              } catch {}
+              return;
+            } else if (eventType === "error") {
+              try {
+                const parsed = JSON.parse(data);
+                onError(parsed.error || "Unknown error");
+              } catch { onError("Unknown error"); }
+              return;
+            }
+          }
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name !== "AbortError") {
+        onError(err.message || "Connection failed");
+      }
+    });
+
+  return controller;
 }

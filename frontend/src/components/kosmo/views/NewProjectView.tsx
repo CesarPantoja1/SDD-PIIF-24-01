@@ -27,6 +27,7 @@ import {
 } from "@/lib/storage";
 import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
 import { useLocal } from "@/hooks/use-local";
+import { useAuth } from "@/hooks/use-auth";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { MOCK_VARIANTS } from "@/lib/mock-data";
@@ -48,13 +49,11 @@ import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerI
 import { AgentWorkingModal } from "@/components/kosmo/workspace/AgentWorkingModal";
 
 export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureAgents: () => void; onGenerate: (projectId: string) => void }) {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
   const PROJECTS = useVisibleProjects();
-  // Pre-rellena con la variante libre según los proyectos ya creados
-  // Rota la variante por defecto según el número de proyectos existentes
-  const defaultVariantIdx = PROJECTS.length % MOCK_VARIANTS.length;
-  const defaultVariant = MOCK_VARIANTS[defaultVariantIdx];
-  const [name, setName] = useState(defaultVariant.name);
-  const [idea, setIdea] = useState(defaultVariant.description);
+  const [name, setName] = useState("");
+  const [idea, setIdea] = useState("");
   const [agents] = useAgentPrefs();
   const createProject = useCreateProject();
   const projectCount = PROJECTS.length;
@@ -62,7 +61,10 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
   const [pendingProjectId, setPendingProjectId] = useState<string | null>(null);
   const [, setGenerated] = useGenerated(pendingProjectId || "");
 
-  const canGenerate = !limitReached && name.trim().length > 1 && idea.trim().length > 5 && agents.configured && !createProject.isPending;
+  const canGenerate = !limitReached && name.trim().length > 1 && idea.trim().length > 5 
+    && !!agents.discovery.creator.provider && !!agents.discovery.creator.model
+    && !createProject.isPending;
+
   const handleGenerate = async () => {
     if (!canGenerate) return;
     try {
@@ -73,10 +75,15 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
     }
   };
 
-  const handleModalDone = async () => {
+  const handleModalDone = async (content?: string) => {
     if (!pendingProjectId) return;
     try {
       await setGenerated({ [docKey(null, "brief")]: true });
+      // Save real AI-generated content to localStorage so PhaseEditor shows it
+      if (content) {
+        const phaseKey = `kosmo.phase.${pendingProjectId}.brief`;
+        localStorage.setItem(phaseKey, mdToHtml(content));
+      }
       onGenerate(pendingProjectId);
     } catch (e: any) {
       alert(e?.message ?? "Error guardando progreso");
@@ -91,7 +98,7 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Nuevo proyecto</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Define la idea inicial. Los agentes globales se reutilizan automáticamente.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Define la idea inicial. La IA generará el Discovery automáticamente.</p>
           </div>
           <div className="text-right">
             <div className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-slate-600">
@@ -116,7 +123,7 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ej: Pasa Libro"
+            placeholder="Ej: Sistema Contable Empresarial"
             className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
           />
 
@@ -134,10 +141,10 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium flex items-center gap-2">
                 Configuración de agentes
-                {agents.configured ? <Badge tone="green">Listos</Badge> : <Badge tone="amber">Requerido</Badge>}
+                {agents.discovery.creator.provider ? <Badge tone="green">Listos</Badge> : <Badge tone="amber">Requerido</Badge>}
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {agents.configured ? `Clarificador: ${PROVIDERS[agents.clarifier.provider].label} · ${agents.clarifier.model} — Discovery: ${PROVIDERS[agents.discovery.creator.provider].label} · ${agents.discovery.creator.model} / ${PROVIDERS[agents.discovery.reviewer.provider].label} · ${agents.discovery.reviewer.model}` : "Configura los agentes globales antes de generar el descubrimiento."}
+                {agents.discovery.creator.provider ? `Discovery: ${PROVIDERS[agents.discovery.creator.provider].label} · ${agents.discovery.creator.model} / ${PROVIDERS[agents.discovery.reviewer.provider].label} · ${agents.discovery.reviewer.model}` : "Configura los agentes de Discovery antes de generar."}
               </div>
             </div>
             <button onClick={onConfigureAgents} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
@@ -163,6 +170,10 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
         <AgentWorkingModal
           mode="generate"
           toLabel="Descubrimiento"
+          sseToken={token}
+          sseProjectId={pendingProjectId}
+          sseProvider={agents.discovery.creator.provider}
+          sseModel={agents.discovery.creator.model}
           onDone={handleModalDone}
           onCancel={() => setPendingProjectId(null)}
         />
@@ -170,4 +181,3 @@ export function NewProjectView({ onConfigureAgents, onGenerate }: { onConfigureA
     </div>
   );
 }
-
