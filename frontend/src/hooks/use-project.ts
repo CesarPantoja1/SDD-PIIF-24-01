@@ -31,7 +31,7 @@ export function useProjectsRaw() {
   return useQuery({
     queryKey: ["projects", user?.id],
     enabled: !!user && !!token,
-    staleTime: 30_000,
+    staleTime: 0,
     queryFn: async (): Promise<ProjectMeta[]> => {
       const items = await listProjects(token!);
       return items.map((r) => ({
@@ -46,7 +46,6 @@ export function useProjectsRaw() {
         tags: r.tags ?? [],
       }));
     },
-    initialData: [],
   });
 }
 

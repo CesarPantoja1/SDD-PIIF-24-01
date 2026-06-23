@@ -28,6 +28,7 @@ import {
 import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
 import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
+import { useAuth } from "@/hooks/use-auth";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
@@ -44,12 +45,22 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
+/** Check if this is a project-level brief (doc=brief, no spec) with a valid projectId. */
+function isProjectLevelBrief(doc: DocKey, projectId: string): boolean {
+  return doc === "brief" && !!projectId;
+}
+
 export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate, isGenerated }: { projectId: string; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void; isGenerated: boolean; }) {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
   const editorRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef<string>("");
   const [dirty, setDirty] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [loadedFromBackend, setLoadedFromBackend] = useState(false);
   const storageKey = `kosmo.phase.${projectId}.${scopeKey}`;
+
+  const isContentReady = isGenerated || loadedFromBackend;
 
   // Re-seed editor whenever the active doc/scope changes. Load saved content
   // from localStorage (per project + scope) if any, else use the template.
@@ -60,6 +71,47 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
     if (!editorRef.current) return;
     let html = "";
     try { html = localStorage.getItem(storageKey) ?? ""; } catch {}
+
+    // If there's saved content, ALWAYS show it (regardless of isGenerated)
+    if (html) {
+      editorRef.current.innerHTML = html;
+      seedRef.current = html;
+      setDirty(false);
+      return;
+    }
+
+    // No localStorage: try fetching from backend (e.g. after clearing browser data)
+    if (isProjectLevelBrief(doc, projectId) && token) {
+      const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL ?? "http://localhost:8000";
+      fetch(`${backendUrl}/api/v1/projects/${projectId}/documents/brief`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.content && editorRef.current) {
+            const htmlContent = mdToHtml(data.content);
+            try { localStorage.setItem(storageKey, htmlContent); } catch {}
+            // Also mark as generated so isGenerated becomes true
+            if (data.generated) {
+              try {
+                const genKey = `kosmo.project.${projectId}.generated`;
+                const existing = JSON.parse(localStorage.getItem(genKey) || "{}");
+                localStorage.setItem(genKey, JSON.stringify({ ...existing, brief: true }));
+              } catch {}
+            }
+            editorRef.current.innerHTML = htmlContent;
+            seedRef.current = htmlContent;
+            setDirty(false);
+            setLoadedFromBackend(true);
+          }
+        })
+        .catch((err) => {
+          console.error("[PhaseEditor] Failed to load document from backend:", err);
+        });
+      return;
+    }
+
+    // No saved content: show template or empty
     if (!isGenerated) {
       editorRef.current.innerHTML = "";
       seedRef.current = "";
@@ -67,11 +119,11 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
       return;
     }
 
-    if (!html) html = phaseInitialHtml(doc, specName, variantIdx);
+    html = phaseInitialHtml(doc, specName, variantIdx);
     editorRef.current.innerHTML = html;
     seedRef.current = html;
     setDirty(false);
-  }, [storageKey, doc, specName, variantIdx, isGenerated]);
+  }, [storageKey, doc, specName, variantIdx, isGenerated, projectId, token]);
 
   const exec = (cmd: string, value?: string) => {
     editorRef.current?.focus();
@@ -146,7 +198,7 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
 
       {/* Editor surface */}
       <div className="flex-1 min-h-0 relative flex flex-col">
-        {!isGenerated && (
+        {!isContentReady && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card text-center p-6">
             <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <FileText className="h-8 w-8 text-slate-300" />
@@ -160,7 +212,7 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
         <div
           ref={editorRef}
           data-editor-scope={scopeKey}
-          contentEditable={isGenerated}
+          contentEditable={isContentReady}
           suppressContentEditableWarning
           onInput={onInput}
           onFocus={() => setFocused(true)}
