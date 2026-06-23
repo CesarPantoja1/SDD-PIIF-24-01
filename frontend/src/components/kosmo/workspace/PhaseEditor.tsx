@@ -77,6 +77,7 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
       editorRef.current.innerHTML = html;
       seedRef.current = html;
       setDirty(false);
+      setLoadedFromBackend(true);
       return;
     }
 
