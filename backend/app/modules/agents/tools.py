@@ -5,6 +5,8 @@ User identity (user_id, project_id, access_token) is injected via
 LangGraph's config.configurable, not passed by the agent itself.
 """
 
+import json
+
 from langgraph.config import get_config
 from langchain_core.tools import tool
 
@@ -83,3 +85,69 @@ def read_full_brief() -> str:
     except Exception:
         pass
     return "Error: could not read brief from database."
+
+
+@tool
+def create_specs(specs_json: str) -> str:
+    """Create multiple specs from a JSON array. Each spec must have 'name' and 'description'.
+    Example: [{"name":"Gestión de Inventario","description":"Los usuarios registran..."}]
+    Saves all specs with auto-incremented positions."""
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+
+    try:
+        specs = json.loads(specs_json)
+    except json.JSONDecodeError:
+        return "Error: invalid JSON. Expected [{\"name\": \"...\", \"description\": \"...\"}]"
+
+    if not isinstance(specs, list):
+        return "Error: expected a JSON array"
+
+    created = []
+    for i, spec in enumerate(specs):
+        if not isinstance(spec, dict) or "name" not in spec:
+            continue
+        result = (
+            client.table("specs")
+            .insert({
+                "project_id": ctx["project_id"],
+                "name": spec["name"],
+                "description": spec.get("description", ""),
+                "position": i,
+            })
+            .execute()
+        )
+        if result and result.data:
+            created.append({"id": result.data[0]["id"], "name": spec["name"]})
+
+    return f"Created {len(created)} specs: {json.dumps(created)}"
+
+
+@tool
+def read_all_specs() -> str:
+    """Read ALL specs for the current project from the database.
+    Returns name, description, and position for each spec.
+    Use this to verify which specs exist and what they contain."""
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+
+    try:
+        result = (
+            client.table("specs")
+            .select("id,name,description,position")
+            .eq("project_id", ctx["project_id"])
+            .order("position")
+            .execute()
+        )
+        if not result or not result.data:
+            return "No specs found for this project."
+
+        lines = []
+        for s in result.data:
+            lines.append(
+                f"## {s['name']} (position {s['position']})\n{s.get('description', '')}"
+            )
+        return "\n\n".join(lines)
+    except Exception:
+        pass
+    return "Error: could not read specs from database."

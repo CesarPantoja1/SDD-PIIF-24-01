@@ -1,24 +1,23 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./use-auth";
-import { useAgentConfigs } from "./use-agent-configs";
 import { DEFAULT_PROMPTS } from "@/lib/constants";
 import { apiClient } from "@/lib/api/client";
 import type { AgentSlotKey } from "@/lib/types";
 
-const DISCOVERY_SLOTS = new Set(["discovery.creator", "discovery.reviewer"]);
+const BACKEND_SLOTS = new Set(["discovery.creator", "discovery.reviewer", "specs.creator", "specs.reviewer"]);
 
 export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) {
   const qc = useQueryClient();
   const { user, session } = useAuth();
   const token = session?.access_token ?? null;
-  const isDiscoverySlot = DISCOVERY_SLOTS.has(slot);
+  const isBackendSlot = BACKEND_SLOTS.has(slot);
   const key = ["prompt", user?.id, scope, slot];
 
-  // For discovery slots: load from backend agent_configs
+  // For backend-managed slots: load from backend agent_configs
   const { data: backendData } = useQuery({
     queryKey: ["agent_configs"],
-    enabled: isDiscoverySlot && !!token,
+    enabled: isBackendSlot && !!token,
     staleTime: 60_000,
     queryFn: async () => {
       return apiClient.get<{ configs: Record<string, { system_prompt: string }> }>(
@@ -29,7 +28,7 @@ export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) 
     initialData: { configs: {} },
   });
 
-  const backendPrompt = isDiscoverySlot
+  const backendPrompt = isBackendSlot
     ? backendData?.configs?.[slot]?.system_prompt
     : undefined;
 
@@ -45,8 +44,8 @@ export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) 
   const setContent = useCallback(
     async (next: string) => {
       qc.setQueryData(key, next);
-      // For discovery slots: persist to backend
-      if (isDiscoverySlot && token) {
+      // For backend slots: persist to backend
+      if (isBackendSlot && token) {
         try {
           await apiClient.patch(`/agents/configs/${slot}`, { system_prompt: next }, token);
           qc.invalidateQueries({ queryKey: ["agent_configs"] });
@@ -55,7 +54,7 @@ export function usePromptTemplate(scope: "global" | string, slot: AgentSlotKey) 
         }
       }
     },
-    [qc, token, isDiscoverySlot, slot],
+    [qc, token, isBackendSlot, slot],
   );
 
   return [data ?? fallback, setContent] as const;

@@ -19,6 +19,16 @@ DEFAULT_CONFIGS: dict[str, dict] = {
         "model": "gpt-4o",
         "system_prompt": "",
     },
+    "specs.creator": {
+        "provider": "openai",
+        "model": "gpt-4o",
+        "system_prompt": SPECS_CREATOR_DEFAULT_PROMPT,
+    },
+    "specs.reviewer": {
+        "provider": "openai",
+        "model": "gpt-4o",
+        "system_prompt": "",
+    },
     "requirements.creator": {
         "provider": "anthropic",
         "model": "claude-sonnet-4",

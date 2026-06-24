@@ -20,7 +20,7 @@ from app.modules.agents.schemas import (
     PromptUpdateRequest,
 )
 from app.modules.agents.config_service import AgentConfigService, DEFAULT_RUBRICS
-from app.modules.agents.service import run_discovery_agent
+from app.modules.agents.service import run_discovery_agent, run_specs_agent
 from app.modules.api_keys.service import ApiKeysService
 from app.modules.auth.dependencies import CurrentUser, get_current_user
 
@@ -36,16 +36,25 @@ async def generate_discovery_stream(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     """SSE endpoint that streams rubric evaluations in real time during
-    discovery generation. Accepts optional provider/model overrides."""
+    generation. Routes to discovery or specs agent based on doc_key."""
+
+    doc_key = body.doc_key if body else "brief"
 
     # Load user config
     keys = ApiKeysService().get_keys(current_user.access_token, current_user.id)
     configs = AgentConfigService().get_or_default(current_user.access_token, current_user.id)
-    creator_config = configs.get("discovery.creator", {})
+
+    # Choose agent function and config
+    if doc_key == "specs":
+        run_agent = run_specs_agent
+        slot_config = configs.get("specs.creator", {})
+    else:
+        run_agent = run_discovery_agent
+        slot_config = configs.get("discovery.creator", {})
 
     # Override provider/model from request body if provided
-    provider = (body.provider if body and body.provider else None) or creator_config.get("provider", "openai")
-    model_name = (body.model if body and body.model else None) or creator_config.get("model", "gpt-4o")
+    provider = (body.provider if body and body.provider else None) or slot_config.get("provider", "openai")
+    model_name = (body.model if body and body.model else None) or slot_config.get("model", "gpt-4o")
 
     api_key = keys.get(provider)
     if not api_key:
@@ -69,14 +78,14 @@ async def generate_discovery_stream(
 
         future = loop.run_in_executor(
             executor,
-            run_discovery_agent,
+            run_agent,
             project_id,
             current_user.id,
             current_user.access_token,
             api_key,
             provider,
             model_name,
-            creator_config.get("system_prompt"),
+            slot_config.get("system_prompt"),
             on_eval,
         )
 
@@ -107,7 +116,10 @@ async def generate_discovery_stream(
         # Agent finished
         try:
             result = future.result()
-            yield f"event: complete\ndata: {json.dumps({'content': result.get('content', '')})}\n\n"
+            if doc_key == "specs":
+                yield f"event: complete\ndata: {json.dumps({'specs': result.get('specs', [])})}\n\n"
+            else:
+                yield f"event: complete\ndata: {json.dumps({'content': result.get('content', '')})}\n\n"
         except Exception as exc:
             yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
         finally:

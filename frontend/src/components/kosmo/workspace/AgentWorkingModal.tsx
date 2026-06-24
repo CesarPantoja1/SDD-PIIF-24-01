@@ -95,6 +95,7 @@ export function AgentWorkingModal({
   sseProjectId,
   sseProvider,
   sseModel,
+  sseDocKey,
 }: {
   mode: "generate" | "regenerate" | "generate-specs";
   toLabel: string;
@@ -104,8 +105,10 @@ export function AgentWorkingModal({
   sseProjectId?: string;
   sseProvider?: string;
   sseModel?: string;
+  sseDocKey?: string;
 }) {
-  const useSSE = !!(sseToken && sseProjectId && sseProvider && sseModel && mode === "generate");
+  const useSSE = !!(sseToken && sseProjectId && sseProvider && sseModel
+    && (mode === "generate" || mode === "generate-specs"));
   const isDiscoverySSE = useSSE;
 
   // debug
@@ -164,11 +167,16 @@ export function AgentWorkingModal({
       sseProjectId!,
       sseProvider!,
       sseModel!,
+      sseDocKey || "brief",
       (evaluation) => {
         setSseEvaluations((prev) => [...prev, evaluation]);
       },
-      (content) => {
-        setSseContent(content);
+      (data) => {
+        if (sseDocKey === "specs") {
+          setSseContent(data.specs ? JSON.stringify(data.specs) : "");
+        } else {
+          setSseContent((data.content as string) || "");
+        }
         setSseFinished(true);
       },
       (error) => {

@@ -18,13 +18,14 @@ export type ProviderKey = "deepseek" | "google" | "openai" | "anthropic";
 
 export type AgentSpec = { provider: ProviderKey; model: string };
 
-export type StageKey = "discovery" | "requirements" | "design" | "tasks";
+export type StageKey = "discovery" | "specs" | "requirements" | "design" | "tasks";
 
 export type StageAgents = { creator: AgentSpec; reviewer: AgentSpec };
 
 export type AgentsConfig = {
   clarifier: AgentSpec;
   discovery: StageAgents;
+  specs: StageAgents;
   requirements: StageAgents;
   design: StageAgents;
   tasks: StageAgents;

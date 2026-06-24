@@ -149,14 +149,15 @@ export async function saveAgentConfig(
   return apiClient.put(`/agents/configs/${slotKey}`, body, token);
 }
 
-/** SSE: generate discovery with real-time evaluations */
+/** SSE: generate discovery or specs with real-time evaluations */
 export function streamDiscovery(
   token: string,
   projectId: string,
   provider: string,
   model: string,
+  docKey: string,
   onEvaluation: (data: Evaluation) => void,
-  onComplete: (content: string) => void,
+  onComplete: (data: Record<string, unknown>) => void,
   onError: (error: string) => void,
 ): AbortController {
   const controller = new AbortController();
@@ -168,7 +169,7 @@ export function streamDiscovery(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ provider, model }),
+    body: JSON.stringify({ provider, model, doc_key: docKey }),
     signal: controller.signal,
   })
     .then(async (response) => {
@@ -205,7 +206,7 @@ export function streamDiscovery(
             } else if (eventType === "complete") {
               try {
                 const parsed = JSON.parse(data);
-                onComplete(parsed.content || "");
+                onComplete(parsed);
               } catch {}
               return;
             } else if (eventType === "error") {

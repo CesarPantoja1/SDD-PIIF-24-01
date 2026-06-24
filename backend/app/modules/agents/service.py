@@ -14,8 +14,11 @@ from deepagents.middleware.summarization import SummarizationMiddleware
 
 from app.core.errors import http_error
 from app.db.supabase import get_supabase_user_client
-from app.modules.agents.tools import get_project_info, save_brief, read_full_brief
-from app.modules.agents.prompts import DISCOVERY_CREATOR_DEFAULT_PROMPT, DISCOVERY_RUBRIC
+from app.modules.agents.tools import get_project_info, save_brief, read_full_brief, create_specs, read_all_specs
+from app.modules.agents.prompts import (
+    DISCOVERY_CREATOR_DEFAULT_PROMPT, DISCOVERY_RUBRIC,
+    SPECS_CREATOR_DEFAULT_PROMPT, SPECS_RUBRIC,
+)
 
 
 def run_discovery_agent(
@@ -108,6 +111,94 @@ def _read_brief_from_db(access_token: str, project_id: str) -> str | None:
     except Exception:
         pass
     return None
+
+
+def _read_specs_from_db(access_token: str, project_id: str) -> list[dict]:
+    """Read all specs from DB."""
+    try:
+        client = get_supabase_user_client(access_token)
+        r = (
+            client.table("specs")
+            .select("id,name,description,position")
+            .eq("project_id", project_id)
+            .order("position")
+            .execute()
+        )
+        if r and r.data:
+            return r.data
+    except Exception:
+        pass
+    return []
+
+
+def run_specs_agent(
+    project_id: str,
+    user_id: str,
+    access_token: str,
+    api_key: str,
+    provider: str,
+    model_name: str,
+    system_prompt: str | None = None,
+    on_evaluation: object = None,
+) -> dict:
+    """Execute the specs agent synchronously. Designed to run in a thread pool.
+
+    Returns dict with 'specs' and 'evaluations' keys.
+    """
+
+    resolved_model = init_chat_model(
+        f"{provider}:{model_name}",
+        api_key=api_key,
+        temperature=0.3,
+    )
+
+    agent = create_agent(
+        model=resolved_model,
+        tools=[read_full_brief, create_specs],
+        middleware=[
+            RubricMiddleware(
+                model=resolved_model,
+                max_iterations=3,
+                on_evaluation=on_evaluation,
+                tools=[read_full_brief, read_all_specs],
+            ),
+            SummarizationMiddleware(
+                model=resolved_model,
+                backend=StateBackend(),
+                trigger=("fraction", 0.85),
+                keep=("fraction", 0.10),
+            ),
+        ],
+        system_prompt=system_prompt or SPECS_CREATOR_DEFAULT_PROMPT,
+    )
+
+    result = agent.invoke(
+        {
+            "messages": [
+                HumanMessage(
+                    content="Read the Discovery brief with read_full_brief(), "
+                    "then extract functional specs and save them with create_specs()."
+                )
+            ],
+            "rubric": SPECS_RUBRIC,
+        },
+        config={
+            "configurable": {
+                "thread_id": f"specs-{project_id}",
+                "user_id": user_id,
+                "project_id": project_id,
+                "access_token": access_token,
+            },
+        },
+    )
+
+    specs = _read_specs_from_db(access_token, project_id)
+    evaluations = result.get("_rubric_evaluations", [])
+
+    return {
+        "specs": specs,
+        "evaluations": [_serialize_evaluation(ev) for ev in evaluations],
+    }
 
 
 def _serialize_evaluation(evaluation: dict) -> dict:

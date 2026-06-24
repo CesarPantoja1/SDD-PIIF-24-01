@@ -141,7 +141,7 @@ function getSpecBySlotKey(
 
 function getChangedSlots(before: AgentsConfig, after: AgentsConfig): AgentSlotKey[] {
   const changed: AgentSlotKey[] = [];
-  const stages = ["discovery", "requirements", "design", "tasks"] as const;
+  const stages = ["discovery", "specs", "requirements", "design", "tasks"] as const;
   const whiches = ["creator", "reviewer"] as const;
 
   for (const [key, get] of [
@@ -168,7 +168,7 @@ function getChangedSlots(before: AgentsConfig, after: AgentsConfig): AgentSlotKe
 
 function agentsToBackendConfigs(agents: AgentsConfig): { configs: Record<string, BackendConfig> } {
   const configs: Record<string, BackendConfig> = {};
-  const stages = ["discovery", "requirements", "design", "tasks"] as const;
+  const stages = ["discovery", "specs", "requirements", "design", "tasks"] as const;
   const whiches = ["creator", "reviewer"] as const;
 
   if (agents.clarifier.provider) {

@@ -407,10 +407,11 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
         <AgentWorkingModal
           mode={working.mode}
           toLabel={working.toLabel}
-          sseToken={working.mode === "generate" && working.doc === "brief" ? token : null}
-          sseProjectId={working.mode === "generate" && working.doc === "brief" ? projectId : undefined}
-          sseProvider={working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.provider : undefined}
-          sseModel={working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.model : undefined}
+          sseToken={(working.mode === "generate" || working.mode === "generate-specs") && working.doc === "brief" ? token : null}
+          sseProjectId={(working.mode === "generate" || working.mode === "generate-specs") && working.doc === "brief" ? projectId : undefined}
+          sseProvider={working.mode === "generate-specs" ? agents.specs.creator.provider : working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.provider : undefined}
+          sseModel={working.mode === "generate-specs" ? agents.specs.creator.model : working.mode === "generate" && working.doc === "brief" ? agents.discovery.creator.model : undefined}
+          sseDocKey={working.mode === "generate-specs" ? "specs" : "brief"}
           onDone={async (content?: string) => {
             const variantIdx = (() => {
               let hash = 0;
@@ -422,13 +423,27 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
             const variant = MOCK_VARIANTS[variantIdx];
 
             if (working.mode === "generate-specs") {
-              const newSpecs = variant.specNames.map((name, i) => ({
-                id: `mock-spec-${projectId}-${i}`,
-                name,
-                description: variant.specDescriptions?.[i],
-              }));
-              window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.specs.${projectId}`, value: newSpecs } }));
-              localStorage.setItem(`kosmo.mock.specs.${projectId}`, JSON.stringify(newSpecs));
+              if (content) {
+                // Real SSE data: parse specs list
+                try {
+                  const specsList = JSON.parse(content);
+                  if (Array.isArray(specsList)) {
+                    const key = `kosmo.mock.specs.${projectId}`;
+                    localStorage.setItem(key, JSON.stringify(specsList));
+                    window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key, value: specsList } }));
+                    setEditorKey(k => k + 1);
+                  }
+                } catch {}
+              } else {
+                // Mock fallback
+                const newSpecs = variant.specNames.map((name, i) => ({
+                  id: `mock-spec-${projectId}-${i}`,
+                  name,
+                  description: variant.specDescriptions?.[i],
+                }));
+                window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.specs.${projectId}`, value: newSpecs } }));
+                localStorage.setItem(`kosmo.mock.specs.${projectId}`, JSON.stringify(newSpecs));
+              }
             } else {
               const generatedKey = docKey(working.specId, working.doc);
               localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [generatedKey]: true }));
