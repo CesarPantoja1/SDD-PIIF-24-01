@@ -103,6 +103,9 @@ def create_specs(specs_json: str) -> str:
     if not isinstance(specs, list):
         return "Error: expected a JSON array"
 
+    # Hacer la operación idempotente: reemplazar las especificaciones existentes para evitar duplicados en iteraciones de rúbrica
+    client.table("specs").delete().eq("project_id", ctx["project_id"]).execute()
+
     created = []
     for i, spec in enumerate(specs):
         if not isinstance(spec, dict) or "name" not in spec:

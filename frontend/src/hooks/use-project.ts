@@ -10,7 +10,7 @@
  *   - Re-enable by uncommenting the relevant sections and wiring to the backend.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 // import { supabase } from "@/integrations/supabase/client"; // Habilitar para specs/generated (iter. futura)
 import { useAuth } from "./use-auth";
 import type { ProjectMeta, SpecRef, ProjectStatus } from "@/lib/types";
@@ -20,6 +20,7 @@ import {
   createProject,
   updateProject,
   deleteProject,
+  fetchSpecs,
 } from "@/lib/api/api";
 
 // ─── Projects ─────────────────────────────────────────────────────────────
@@ -131,7 +132,19 @@ import { useLocal } from "./use-local";
 
 export function useProjectSpecs(_projectId: string) {
   const [specs, setSpecs] = useLocal<SpecRef[]>(`kosmo.mock.specs.${_projectId}`, []);
+  const { session } = useAuth();
   
+  useEffect(() => {
+    if (!session?.access_token || !_projectId) return;
+    fetchSpecs(session.access_token, _projectId)
+      .then((data) => {
+        if (data && data.length > 0) {
+          setSpecs(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch specs:", err));
+  }, [_projectId, session?.access_token, setSpecs]);
+
   const updateSpecs = useCallback(async (next: SpecRef[]) => {
     setSpecs(next);
   }, [setSpecs]);

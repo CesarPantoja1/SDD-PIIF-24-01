@@ -46,6 +46,25 @@ def get_document(
     return {"content": None, "generated": False}
 
 
+@router.get("/{project_id}/specs")
+def get_project_specs(
+    project_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Get all specs for a project."""
+    client = get_supabase_user_client(current_user.access_token)
+    result = (
+        client.table("specs")
+        .select("id,name,description,position")
+        .eq("project_id", project_id)
+        .order("position")
+        .execute()
+    )
+    if result and result.data:
+        return result.data
+    return []
+
+
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
     project_id: str,

@@ -428,9 +428,21 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 try {
                   const specsList = JSON.parse(content);
                   if (Array.isArray(specsList)) {
+                    const specsWithIds = specsList.map((s, i) => ({
+                      id: s.id || `spec-${projectId}-${Date.now()}-${i}`,
+                      name: s.name || s.titulo || "Módulo Sin Nombre",
+                      description: s.description || s.descripcion || "",
+                    }));
                     const key = `kosmo.mock.specs.${projectId}`;
-                    localStorage.setItem(key, JSON.stringify(specsList));
-                    window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key, value: specsList } }));
+                    localStorage.setItem(key, JSON.stringify(specsWithIds));
+                    window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key, value: specsWithIds } }));
+                    
+                    // Mark specs as generated
+                    const genKey = `kosmo.mock.generated.${projectId}`;
+                    const nextGen = { ...generated, specs: true };
+                    localStorage.setItem(genKey, JSON.stringify(nextGen));
+                    window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: genKey, value: nextGen } }));
+
                     setEditorKey(k => k + 1);
                   }
                 } catch {}

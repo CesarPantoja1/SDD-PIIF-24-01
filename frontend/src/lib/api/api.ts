@@ -100,6 +100,15 @@ export async function getProject(
   return apiClient.get<ProjectResponse>(`/projects/${projectId}`, token);
 }
 
+/** GET /projects/:id/specs – get specs for a project */
+export async function fetchSpecs(
+  token: string,
+  projectId: string
+): Promise<any[]> {
+  return apiClient.get<any[]>(`/projects/${projectId}/specs`, token);
+}
+
+
 /** PATCH /projects/:id – update a project */
 export async function updateProject(
   token: string,
