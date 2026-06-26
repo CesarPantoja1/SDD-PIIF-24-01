@@ -168,6 +168,7 @@ export function streamDiscovery(
   onEvaluation: (data: Evaluation) => void,
   onComplete: (data: Record<string, unknown>) => void,
   onError: (error: string) => void,
+  specId?: string | null,
 ): AbortController {
   const controller = new AbortController();
   const url = `${BACKEND_URL}/api/v1/agents/projects/${projectId}/generate/stream`;
@@ -178,7 +179,7 @@ export function streamDiscovery(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ provider, model, doc_key: docKey }),
+    body: JSON.stringify({ provider, model, doc_key: docKey, spec_id: specId }),
     signal: controller.signal,
   })
     .then(async (response) => {

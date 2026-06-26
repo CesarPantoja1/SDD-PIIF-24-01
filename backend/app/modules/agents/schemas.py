@@ -7,6 +7,7 @@ class GenerateRequest(BaseModel):
     doc_key: str = Field(default="brief", description="Phase to generate: brief, specs, requirements, design, tasks")
     provider: str | None = Field(default=None, description="Override provider from agent config")
     model: str | None = Field(default=None, description="Override model from agent config")
+    spec_id: str | None = Field(default=None, description="Spec ID when generating a spec-level document")
 
 
 class GenerateResponse(BaseModel):

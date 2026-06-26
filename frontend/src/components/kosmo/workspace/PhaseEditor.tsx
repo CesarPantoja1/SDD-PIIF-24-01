@@ -50,7 +50,7 @@ function isProjectLevelBrief(doc: DocKey, projectId: string): boolean {
   return doc === "brief" && !!projectId;
 }
 
-export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate, isGenerated }: { projectId: string; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void; isGenerated: boolean; }) {
+export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate, isGenerated }: { projectId: string; specId?: string | null; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void; isGenerated: boolean; }) {
   const { session } = useAuth();
   const token = session?.access_token ?? null;
   const editorRef = useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
     let html = "";
     try { html = localStorage.getItem(storageKey) ?? ""; } catch {}
 
-    // If there's saved content, ALWAYS show it (regardless of isGenerated)
+    // 1. If we have local storage content, display it immediately
     if (html) {
       editorRef.current.innerHTML = html;
       seedRef.current = html;
@@ -81,12 +81,19 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
       return;
     }
 
-    // No localStorage: try fetching from backend (e.g. after clearing browser data)
-    if (isProjectLevelBrief(doc, projectId) && token) {
+    // 2. No local storage, clear the editor so old content doesn't linger while fetching
+    editorRef.current.innerHTML = "";
+    seedRef.current = "";
+    setDirty(false);
+    setLoadedFromBackend(false);
+
+    // 3. Try fetching from backend
+    if (token) {
       const backendUrl = (import.meta as any).env?.VITE_BACKEND_URL ?? "http://localhost:8000";
-      fetch(`${backendUrl}/api/v1/projects/${projectId}/documents/brief`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      let url = `${backendUrl}/api/v1/projects/${projectId}/documents/${doc}`;
+      if (specId) url += `?spec_id=${specId}`;
+
+      fetch(url, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((data) => {
           if (data?.content && editorRef.current) {
@@ -95,36 +102,43 @@ export function PhaseEditor({ projectId, scopeKey, doc, fileName, specName, chat
             // Also mark as generated so isGenerated becomes true
             if (data.generated) {
               try {
-                const genKey = `kosmo.project.${projectId}.generated`;
+                const genKey = `kosmo.mock.generated.${projectId}`;
                 const existing = JSON.parse(localStorage.getItem(genKey) || "{}");
-                localStorage.setItem(genKey, JSON.stringify({ ...existing, brief: true }));
+                const currentDocKey = specId ? `${specId}_${doc}` : doc;
+                localStorage.setItem(genKey, JSON.stringify({ ...existing, [currentDocKey]: true }));
+                window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: genKey, value: { ...existing, [currentDocKey]: true } } }));
               } catch {}
             }
             editorRef.current.innerHTML = htmlContent;
             seedRef.current = htmlContent;
             setDirty(false);
             setLoadedFromBackend(true);
+          } else if (editorRef.current) {
+            // Backend returned no content for this spec/doc, so apply template or keep empty
+            const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
+            editorRef.current.innerHTML = fallbackHtml;
+            seedRef.current = fallbackHtml;
+            setDirty(false);
           }
         })
         .catch((err) => {
           console.error("[PhaseEditor] Failed to load document from backend:", err);
+          if (editorRef.current) {
+             const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
+             editorRef.current.innerHTML = fallbackHtml;
+             seedRef.current = fallbackHtml;
+             setDirty(false);
+          }
         });
       return;
     }
 
-    // No saved content: show template or empty
-    if (!isGenerated) {
-      editorRef.current.innerHTML = "";
-      seedRef.current = "";
-      setDirty(false);
-      return;
-    }
-
-    html = phaseInitialHtml(doc, specName, variantIdx);
+    // 4. No token: show template or empty synchronously
+    html = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
     editorRef.current.innerHTML = html;
     seedRef.current = html;
     setDirty(false);
-  }, [storageKey, doc, specName, variantIdx, isGenerated, projectId, token]);
+  }, [storageKey, doc, specName, variantIdx, isGenerated, projectId, token, specId]);
 
   const exec = (cmd: string, value?: string) => {
     editorRef.current?.focus();

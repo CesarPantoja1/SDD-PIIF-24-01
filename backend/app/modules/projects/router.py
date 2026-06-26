@@ -26,18 +26,20 @@ def create_project(
 def get_document(
     project_id: str,
     doc_key: str,
+    spec_id: str | None = None,
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    """Get a project-level document (brief, specs)."""
+    """Get a document. If spec_id is provided, gets the spec-level document (e.g. requirements), otherwise gets project-level document (e.g. brief)."""
     client = get_supabase_user_client(current_user.access_token)
-    result = (
-        client.table("documents")
-        .select("content,generated")
-        .eq("project_id", project_id)
-        .is_("spec_id", "null")
-        .eq("doc_key", doc_key)
-        .execute()
-    )
+    
+    query = client.table("documents").select("content,generated").eq("project_id", project_id).eq("doc_key", doc_key)
+    if spec_id:
+        query = query.eq("spec_id", spec_id)
+    else:
+        query = query.is_("spec_id", "null")
+        
+    result = query.execute()
+
     if result and result.data and len(result.data) > 0:
         return {
             "content": result.data[0].get("content"),

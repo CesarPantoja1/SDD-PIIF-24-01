@@ -6,6 +6,8 @@ from app.modules.agents.prompts import (
     DISCOVERY_RUBRIC,
     SPECS_CREATOR_DEFAULT_PROMPT,
     SPECS_RUBRIC,
+    REQUIREMENTS_CREATOR_DEFAULT_PROMPT,
+    REQUIREMENTS_RUBRIC,
 )
 
 DEFAULT_CONFIGS: dict[str, dict] = {
@@ -32,7 +34,7 @@ DEFAULT_CONFIGS: dict[str, dict] = {
     "requirements.creator": {
         "provider": "anthropic",
         "model": "claude-sonnet-4",
-        "system_prompt": "",
+        "system_prompt": REQUIREMENTS_CREATOR_DEFAULT_PROMPT,
     },
     "requirements.reviewer": {
         "provider": "anthropic",
@@ -64,6 +66,7 @@ DEFAULT_CONFIGS: dict[str, dict] = {
 DEFAULT_RUBRICS: dict[str, str] = {
     "discovery": DISCOVERY_RUBRIC,
     "specs": SPECS_RUBRIC,
+    "requirements": REQUIREMENTS_RUBRIC,
 }
 
 

@@ -96,6 +96,7 @@ export function AgentWorkingModal({
   sseProvider,
   sseModel,
   sseDocKey,
+  sseSpecId,
 }: {
   mode: "generate" | "regenerate" | "generate-specs";
   toLabel: string;
@@ -106,6 +107,7 @@ export function AgentWorkingModal({
   sseProvider?: string;
   sseModel?: string;
   sseDocKey?: string;
+  sseSpecId?: string | null;
 }) {
   const useSSE = !!(sseToken && sseProjectId && sseProvider && sseModel
     && (mode === "generate" || mode === "generate-specs"));
@@ -160,34 +162,46 @@ export function AgentWorkingModal({
 
   // SSE connection
   useEffect(() => {
-    if (!isDiscoverySSE) return;
+    if (!isDiscoverySSE || !sseToken || !sseProjectId || !sseProvider || !sseModel) return;
 
-    const ctrl = streamDiscovery(
-      sseToken!,
-      sseProjectId!,
-      sseProvider!,
-      sseModel!,
-      sseDocKey || "brief",
-      (evaluation) => {
-        setSseEvaluations((prev) => [...prev, evaluation]);
-      },
-      (data) => {
-        if (sseDocKey === "specs") {
-          setSseContent(data.specs ? JSON.stringify(data.specs) : "");
-        } else {
-          setSseContent((data.content as string) || "");
-        }
-        setSseFinished(true);
-      },
-      (error) => {
-        setSseError(error);
-        setSseFinished(true);
-      },
-    );
-    abortRef.current = ctrl;
+    setSseFinished(false);
+    setSseError(null);
+    setSseEvaluations([]);
+    setSseContent("");
 
-    return () => ctrl.abort();
-  }, [isDiscoverySSE, sseToken, sseProjectId]);
+    // Debounce to prevent React 18 StrictMode from firing two concurrent backend agents
+    const timer = setTimeout(() => {
+      const ctrl = streamDiscovery(
+        sseToken,
+        sseProjectId,
+        sseProvider,
+        sseModel!,
+        sseDocKey || "brief",
+        (evaluation) => {
+          setSseEvaluations((prev) => [...prev, evaluation]);
+        },
+        (data) => {
+          if (sseDocKey === "specs") {
+            setSseContent(data.specs ? JSON.stringify(data.specs) : "");
+          } else {
+            setSseContent((data.content as string) || "");
+          }
+          setSseFinished(true);
+        },
+        (error) => {
+          setSseError(error);
+          setSseFinished(true);
+        },
+        sseSpecId
+      );
+      abortRef.current = ctrl;
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      if (abortRef.current) abortRef.current.abort();
+    };
+  }, [isDiscoverySSE, sseToken, sseProjectId, sseProvider, sseModel, sseDocKey, sseSpecId]);
 
   // Mock timer
   useEffect(() => {

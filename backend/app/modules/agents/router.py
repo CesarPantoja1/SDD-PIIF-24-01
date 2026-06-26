@@ -20,7 +20,7 @@ from app.modules.agents.schemas import (
     PromptUpdateRequest,
 )
 from app.modules.agents.config_service import AgentConfigService, DEFAULT_RUBRICS
-from app.modules.agents.service import run_discovery_agent, run_specs_agent
+from app.modules.agents.service import run_discovery_agent, run_specs_agent, run_requirements_agent
 from app.modules.api_keys.service import ApiKeysService
 from app.modules.auth.dependencies import CurrentUser, get_current_user
 
@@ -32,6 +32,7 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 @router.post("/projects/{project_id}/generate/stream")
 async def generate_discovery_stream(
     project_id: str,
+    request: Request,
     body: GenerateRequest | None = None,
     current_user: CurrentUser = Depends(get_current_user),
 ):
@@ -48,6 +49,9 @@ async def generate_discovery_stream(
     if doc_key == "specs":
         run_agent = run_specs_agent
         slot_config = configs.get("specs.creator", {})
+    elif doc_key == "requirements":
+        run_agent = run_requirements_agent
+        slot_config = configs.get("requirements.creator", {})
     else:
         run_agent = run_discovery_agent
         slot_config = configs.get("discovery.creator", {})
@@ -76,21 +80,40 @@ async def generate_discovery_stream(
 
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-        future = loop.run_in_executor(
-            executor,
-            run_agent,
-            project_id,
-            current_user.id,
-            current_user.access_token,
-            api_key,
-            provider,
-            model_name,
-            slot_config.get("system_prompt"),
-            on_eval,
-        )
+        if doc_key == "requirements":
+            future = loop.run_in_executor(
+                executor,
+                run_agent,
+                project_id,
+                current_user.id,
+                current_user.access_token,
+                api_key,
+                provider,
+                model_name,
+                slot_config.get("system_prompt"),
+                on_eval,
+                body.spec_id if body else None,
+            )
+        else:
+            future = loop.run_in_executor(
+                executor,
+                run_agent,
+                project_id,
+                current_user.id,
+                current_user.access_token,
+                api_key,
+                provider,
+                model_name,
+                slot_config.get("system_prompt"),
+                on_eval,
+            )
 
         # Stream events while agent works
         while not future.done():
+            if await request.is_disconnected():
+                future.cancel()
+                break
+                
             try:
                 data = await asyncio.wait_for(queue.get(), timeout=0.2)
                 event = data["event"]

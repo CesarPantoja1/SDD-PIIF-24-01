@@ -154,3 +154,82 @@ def read_all_specs() -> str:
     except Exception:
         pass
     return "Error: could not read specs from database."
+
+
+@tool
+def read_spec_info() -> str:
+    """Read the current spec's name and description. Use this to focus the requirements
+    ONLY on the interaction described for this specific module."""
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+    
+    spec_id = ctx.get("spec_id")
+    if not spec_id:
+        return "Error: No spec_id in context."
+
+    result = (
+        client.table("specs")
+        .select("name,description")
+        .eq("id", spec_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result or not result.data:
+        return "Error: spec not found."
+    
+    s = result.data
+    return f"Módulo: {s['name']}\nInteracción del usuario: {s['description']}"
+
+
+@tool
+def save_requirements(content: str) -> str:
+    """Save the requirements document for the current spec. Pass the FULL markdown content."""
+    if len(content) > 100_000:
+        return "Error: content too large (max 100,000 characters)."
+
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+    
+    spec_id = ctx.get("spec_id")
+    if not spec_id:
+        return "Error: No spec_id in context."
+
+    client.table("documents").upsert(
+        {
+            "project_id": ctx["project_id"],
+            "spec_id": spec_id,
+            "doc_key": "requirements",
+            "content": content,
+            "generated": True,
+        },
+        on_conflict="project_id,spec_id,doc_key",
+    ).execute()
+
+    return "Requirements saved successfully."
+
+
+@tool
+def read_full_requirements() -> str:
+    """Read the FULL saved requirements content directly from the database.
+    Use this when you need to verify that all sections are present and complete."""
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+    
+    spec_id = ctx.get("spec_id")
+    if not spec_id:
+        return "Error: No spec_id in context."
+
+    try:
+        result = (
+            client.table("documents")
+            .select("content")
+            .eq("project_id", ctx["project_id"])
+            .eq("spec_id", spec_id)
+            .eq("doc_key", "requirements")
+            .execute()
+        )
+        if result and result.data and len(result.data) > 0:
+            return result.data[0].get("content", "")
+    except Exception:
+        pass
+    return "Error: could not read requirements from database."
