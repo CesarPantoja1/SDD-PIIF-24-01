@@ -60,13 +60,25 @@ export function DocOutline({ editorScope }: { editorScope: string }) {
       });
       setItems(out);
     };
-    // initial + observe
-    compute();
-    const editor = document.querySelector(`[data-editor-scope="${editorScope}"]`);
-    if (!editor) return;
-    const obs = new MutationObserver(() => compute());
-    obs.observe(editor, { childList: true, subtree: true, characterData: true });
-    return () => obs.disconnect();
+    let obs: MutationObserver | null = null;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const setup = () => {
+      const editor = document.querySelector(`[data-editor-scope="${editorScope}"]`);
+      if (editor) {
+        compute();
+        obs = new MutationObserver(() => compute());
+        obs.observe(editor, { childList: true, subtree: true, characterData: true });
+      } else {
+        timer = setTimeout(setup, 100);
+      }
+    };
+    setup();
+
+    return () => {
+      if (obs) obs.disconnect();
+      clearTimeout(timer);
+    };
   }, [editorScope]);
 
   return (

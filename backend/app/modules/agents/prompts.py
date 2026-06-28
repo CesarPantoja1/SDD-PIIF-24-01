@@ -143,3 +143,38 @@ REQUIREMENTS_RUBRIC = """
 - Los requisitos no describen detalles de UI como botones, modales, colores o menús, sino lógica de negocio y comportamiento observable.
 - No hay frases conversacionales ni texto fuera del formato del documento.
 """
+
+DESIGN_CREATOR_DEFAULT_PROMPT = """Actúa como un Arquitecto de Software Senior. Tu tarea es diseñar el Diagrama de Clases UML completo basándote en los Requisitos y el Discovery proporcionados. 
+Debes generar tu respuesta ESTRICTAMENTE usando la herramienta 'save_design' con la siguiente estructura JSON semántica:
+
+{
+  "classes": [
+    {
+      "name": "NombreClase",
+      "stereotype": "", // Valores válidos: "", "Abstract", "Interface", "Enumeration"
+      "attributes": ["+ id: String", "- nombre: String"],
+      "methods": ["+ operacion(): Void"]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "NombreOrigen",
+      "target": "NombreDestino",
+      "type": "ClassUnidirectional" // Opciones: ClassInheritance, ClassRealization, ClassDependency, ClassAggregation, ClassComposition, ClassUnidirectional, ClassBidirectional
+    }
+  ]
+}
+
+## Reglas
+- Mínimo 5 clases de dominio (NO clases técnicas como Manager, Controller, Service)
+- Si aplica, usa enumeraciones con 2+ literales
+- Nombres sin tildes, eñes ni caracteres especiales
+"""
+
+DESIGN_RUBRIC = """
+- ¿Hay al menos 5 clases de dominio?
+- ¿Cada clase tiene atributos relevantes para los requisitos?
+- ¿Los tipos de relaciones (ClassInheritance, ClassComposition, etc.) son válidos y lógicos?
+- ¿Los nombres de clases no tienen tildes ni caracteres especiales?
+- ¿El diseño cubre exhaustivamente las entidades mencionadas en los requisitos del módulo?
+"""

@@ -429,6 +429,11 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           sseProvider = agents.requirements.creator.provider;
           sseModel = agents.requirements.creator.model;
           sseDocKey = "requirements";
+        } else if (working.doc === "design") {
+          isSSE = true;
+          sseProvider = agents.design.creator.provider;
+          sseModel = agents.design.creator.model;
+          sseDocKey = "design";
         }
 
         return (
@@ -497,9 +502,32 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   setEditorKey(k => k + 1);
                 } else if (working.doc === "design") {
                   const storageKey = `kosmo.apollon.${projectId}.${generatedKey}`;
-                  const specName = specs.find(s => s.id === working.specId)?.name;
-                  const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
-                  localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));
+                  if (content) {
+                    try {
+                      const { parseApollonDesign } = await import("@/lib/apollon-parser");
+                      const parsed = parseApollonDesign(content);
+                      const parsedStr = JSON.stringify(parsed);
+                      localStorage.setItem(storageKey, parsedStr);
+                      // Overwrite the semantic JSON in the DB with the actual Apollon JSON
+                      import("@/lib/api/client").then(({ apiClient }) => {
+                        apiClient.put(
+                          `/projects/${projectId}/documents/design`,
+                          { content: parsedStr, spec_id: working.specId || null },
+                          token
+                        ).catch(console.error);
+                      });
+                    } catch (err) {
+                      console.error("Failed to parse AI design JSON", err);
+                      const specName = specs.find(s => s.id === working.specId)?.name;
+                      const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
+                      localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));
+                    }
+                  } else {
+                    const specName = specs.find(s => s.id === working.specId)?.name;
+                    const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
+                    localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));
+                  }
+                  setEditorKey(k => k + 1);
                 } else if (working.doc !== "code") {
                   const phaseStorageKey = `kosmo.phase.${projectId}.${generatedKey}`;
                   const specName = specs.find(s => s.id === working.specId)?.name;

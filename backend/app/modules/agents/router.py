@@ -20,7 +20,7 @@ from app.modules.agents.schemas import (
     PromptUpdateRequest,
 )
 from app.modules.agents.config_service import AgentConfigService, DEFAULT_RUBRICS
-from app.modules.agents.service import run_discovery_agent, run_specs_agent, run_requirements_agent
+from app.modules.agents.service import run_discovery_agent, run_specs_agent, run_requirements_agent, run_design_agent
 from app.modules.api_keys.service import ApiKeysService
 from app.modules.auth.dependencies import CurrentUser, get_current_user
 
@@ -52,6 +52,9 @@ async def generate_discovery_stream(
     elif doc_key == "requirements":
         run_agent = run_requirements_agent
         slot_config = configs.get("requirements.creator", {})
+    elif doc_key == "design":
+        run_agent = run_design_agent
+        slot_config = configs.get("design.creator", {})
     else:
         run_agent = run_discovery_agent
         slot_config = configs.get("discovery.creator", {})
@@ -80,7 +83,7 @@ async def generate_discovery_stream(
 
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
-        if doc_key == "requirements":
+        if doc_key in ["requirements", "design"]:
             future = loop.run_in_executor(
                 executor,
                 run_agent,

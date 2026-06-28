@@ -8,6 +8,8 @@ from app.modules.agents.prompts import (
     SPECS_RUBRIC,
     REQUIREMENTS_CREATOR_DEFAULT_PROMPT,
     REQUIREMENTS_RUBRIC,
+    DESIGN_CREATOR_DEFAULT_PROMPT,
+    DESIGN_RUBRIC,
 )
 
 DEFAULT_CONFIGS: dict[str, dict] = {
@@ -49,7 +51,7 @@ DEFAULT_CONFIGS: dict[str, dict] = {
     "design.creator": {
         "provider": "openai",
         "model": "gpt-4o",
-        "system_prompt": "",
+        "system_prompt": DESIGN_CREATOR_DEFAULT_PROMPT,
     },
     "design.reviewer": {
         "provider": "anthropic",
@@ -72,6 +74,7 @@ DEFAULT_RUBRICS: dict[str, str] = {
     "discovery": DISCOVERY_RUBRIC,
     "specs": SPECS_RUBRIC,
     "requirements": REQUIREMENTS_RUBRIC,
+    "design": DESIGN_RUBRIC,
 }
 
 

@@ -233,3 +233,58 @@ def read_full_requirements() -> str:
     except Exception:
         pass
     return "Error: could not read requirements from database."
+
+
+@tool
+def save_design(content: str) -> str:
+    """Save the design document (Class Diagram JSON) for the current spec. Pass the FULL JSON string."""
+    if len(content) > 100_000:
+        return "Error: content too large (max 100,000 characters)."
+
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+    
+    spec_id = ctx.get("spec_id")
+    if not spec_id:
+        return "Error: No spec_id in context."
+
+    client.table("documents").upsert(
+        {
+            "project_id": ctx["project_id"],
+            "spec_id": spec_id,
+            "doc_key": "design",
+            "content": content,
+            "generated": True,
+        },
+        on_conflict="project_id,spec_id,doc_key",
+    ).execute()
+
+    return "Design saved successfully."
+
+
+@tool
+def read_full_design() -> str:
+    """Read the FULL saved design JSON directly from the database.
+    Use this when you need to verify the generated classes and relationships."""
+    ctx = _get_context()
+    client = get_supabase_user_client(ctx["access_token"])
+    
+    spec_id = ctx.get("spec_id")
+    if not spec_id:
+        return "Error: No spec_id in context."
+
+    try:
+        result = (
+            client.table("documents")
+            .select("content")
+            .eq("project_id", ctx["project_id"])
+            .eq("spec_id", spec_id)
+            .eq("doc_key", "design")
+            .execute()
+        )
+        if result and result.data and len(result.data) > 0:
+            return result.data[0].get("content", "")
+    except Exception:
+        pass
+    return "Error: could not read design from database."
+

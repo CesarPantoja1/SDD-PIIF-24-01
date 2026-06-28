@@ -14,11 +14,12 @@ from deepagents.middleware.summarization import SummarizationMiddleware
 
 from app.core.errors import http_error
 from app.db.supabase import get_supabase_user_client
-from app.modules.agents.tools import get_project_info, save_brief, read_full_brief, create_specs, read_all_specs, read_spec_info, save_requirements, read_full_requirements
+from app.modules.agents.tools import get_project_info, save_brief, read_full_brief, create_specs, read_all_specs, read_spec_info, save_requirements, read_full_requirements, save_design, read_full_design
 from app.modules.agents.prompts import (
     DISCOVERY_CREATOR_DEFAULT_PROMPT, DISCOVERY_RUBRIC,
     SPECS_CREATOR_DEFAULT_PROMPT, SPECS_RUBRIC,
     REQUIREMENTS_CREATOR_DEFAULT_PROMPT, REQUIREMENTS_RUBRIC,
+    DESIGN_CREATOR_DEFAULT_PROMPT, DESIGN_RUBRIC,
 )
 LANGCHAIN_PROVIDER_MAP = {
     "google": "google_genai",
@@ -313,3 +314,92 @@ def run_requirements_agent(
         "content": final_content,
         "evaluations": [_serialize_evaluation(ev) for ev in evaluations],
     }
+
+
+def run_design_agent(
+    project_id: str,
+    user_id: str,
+    access_token: str,
+    api_key: str,
+    provider: str,
+    model_name: str,
+    system_prompt: str | None = None,
+    on_evaluation: object = None,
+    spec_id: str | None = None,
+) -> dict:
+    """Execute the design agent synchronously. Designed to run in a thread pool.
+
+    Returns dict with 'content' and 'evaluations' keys.
+    """
+
+    lc_provider = LANGCHAIN_PROVIDER_MAP.get(provider, provider)
+    resolved_model = init_chat_model(
+        f"{lc_provider}:{model_name}",
+        api_key=api_key,
+        temperature=0.3,
+    )
+
+    agent = create_agent(
+        model=resolved_model,
+        tools=[read_spec_info, read_full_requirements, save_design],
+        middleware=[
+            RubricMiddleware(
+                model=resolved_model,
+                max_iterations=3,
+                on_evaluation=on_evaluation,
+                tools=[read_spec_info, read_full_requirements, read_full_design],
+            ),
+            SummarizationMiddleware(
+                model=resolved_model,
+                backend=StateBackend(),
+                trigger=("fraction", 0.85),
+                keep=("fraction", 0.10),
+            ),
+        ],
+        system_prompt=system_prompt or DESIGN_CREATOR_DEFAULT_PROMPT,
+    )
+
+    result = agent.invoke(
+        {
+            "messages": [
+                HumanMessage(
+                    content="Read the module scope with read_spec_info() and the requirements with read_full_requirements(), "
+                    "then design the class diagram and save the semantic JSON using save_design()."
+                )
+            ],
+            "rubric": DESIGN_RUBRIC,
+        },
+        config={
+            "configurable": {
+                "thread_id": f"design-{spec_id}",
+                "user_id": user_id,
+                "project_id": project_id,
+                "spec_id": spec_id,
+                "access_token": access_token,
+            },
+        },
+    )
+
+    evaluations = result.get("_rubric_evaluations", [])
+
+    final_content = ""
+    try:
+        client = get_supabase_user_client(access_token)
+        r = (
+            client.table("documents")
+            .select("content")
+            .eq("project_id", project_id)
+            .eq("spec_id", spec_id)
+            .eq("doc_key", "design")
+            .execute()
+        )
+        if r and r.data and len(r.data) > 0:
+            final_content = r.data[0].get("content", "")
+    except Exception as e:
+        print(f"Error fetching final design: {e}")
+
+    return {
+        "content": final_content,
+        "evaluations": [_serialize_evaluation(ev) for ev in evaluations],
+    }
+
