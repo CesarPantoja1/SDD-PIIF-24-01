@@ -352,7 +352,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 ) : (
                   <button
                     onClick={() => onNav(null, "specs")}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                   >
                     Ir a Especificaciones <ArrowRight className="h-3.5 w-3.5" />
                   </button>
@@ -362,14 +362,14 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 specs.length === 0 ? (
                   <button
                     onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Especificaciones del Producto" })}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
                     <Sparkles className="h-3.5 w-3.5" /> Generar Specs con IA
                   </button>
                 ) : (
                   <button
                     onClick={() => onNav(specs[0].id, "requirements")}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                   >
                     Ir al primer módulo <ArrowRight className="h-3.5 w-3.5" />
                   </button>
@@ -389,7 +389,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                     {next && (
                       <button
                         onClick={() => onNav(next.specId, next.doc)}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-700"
+                        className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                       >
                         Siguiente: {DOCS[next.doc].label} <ArrowRight className="h-3.5 w-3.5" />
                       </button>
