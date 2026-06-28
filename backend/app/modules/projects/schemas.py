@@ -31,3 +31,7 @@ class ProjectResponse(BaseModel):
 
 class ProjectListResponse(BaseModel):
     items: list[ProjectResponse]
+
+class DocumentUpdateRequest(BaseModel):
+    content: str
+    spec_id: str | None = None

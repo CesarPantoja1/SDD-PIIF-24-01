@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, status
 
 from app.modules.auth.dependencies import CurrentUser, get_current_user
 from app.db.supabase import get_supabase_user_client
-from app.modules.projects.schemas import ProjectCreateRequest, ProjectListResponse, ProjectResponse, ProjectUpdateRequest
+from app.modules.projects.schemas import ProjectCreateRequest, ProjectListResponse, ProjectResponse, ProjectUpdateRequest, DocumentUpdateRequest
 from app.modules.projects.service import ProjectService
 
 
@@ -47,6 +47,28 @@ def get_document(
         }
     return {"content": None, "generated": False}
 
+
+@router.put("/{project_id}/documents/{doc_key}")
+def update_document(
+    project_id: str,
+    doc_key: str,
+    payload: DocumentUpdateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Upsert a document's content."""
+    client = get_supabase_user_client(current_user.access_token)
+    
+    # We upsert based on project_id, doc_key and optionally spec_id
+    data = {
+        "project_id": project_id,
+        "doc_key": doc_key,
+        "content": payload.content,
+    }
+    if payload.spec_id:
+        data["spec_id"] = payload.spec_id
+        
+    result = client.table("documents").upsert(data, on_conflict="project_id,doc_key,spec_id").execute()
+    return {"status": "success"}
 
 @router.get("/{project_id}/specs")
 def get_project_specs(

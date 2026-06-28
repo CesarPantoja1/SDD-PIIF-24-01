@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import {
   Home, Briefcase, ChevronRight, ChevronDown, Settings, LogOut, User,
@@ -10,7 +10,7 @@ import {
   Quote, Code2, Minus, Table as TableIcon, Link as LinkIcon, Undo2, Redo2,
   Copy, Download, Maximize2, Minimize2, Wand2, RefreshCw, Save, PanelLeft,
   ClipboardList, Brain, Lock, GitCommit, GitMerge, ArrowDownToLine, ArrowUpFromLine,
-  Trash2, FileCode2,
+  Trash2, FileCode2, Loader2,
 } from "lucide-react";
 import type {
   AgentSlotKey, AgentSpec, AgentsConfig, ApiKeys, DocKey,
@@ -29,6 +29,7 @@ import { escapeHtml, htmlToMd, mdInline, mdToHtml } from "@/lib/markdown";
 import { useLocal } from "@/hooks/use-local";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAuth } from "@/hooks/use-auth";
+import { apiClient } from "@/lib/api/client";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
@@ -59,6 +60,8 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
   const [focused, setFocused] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [loadedFromBackend, setLoadedFromBackend] = useState(false);
   const storageKey = `kosmo.phase.${projectId}.${scopeKey}`;
 
@@ -152,12 +155,45 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
     setDirty(editorRef.current?.innerHTML !== seedRef.current);
   };
 
-  const onSave = () => {
+  const onSave = useCallback(async () => {
+    if (isSaving) return;
     const html = editorRef.current?.innerHTML ?? "";
     try { localStorage.setItem(storageKey, html); } catch {}
-    seedRef.current = html;
-    setDirty(false);
-  };
+    
+    setIsSaving(true);
+    try {
+      await apiClient.put(
+        `/projects/${projectId}/documents/${doc}`,
+        { content: html, spec_id: specId || null },
+        token
+      );
+      seedRef.current = html;
+      setDirty(false);
+      setToastMessage("Guardado exitosamente");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } catch (err) {
+      console.error("Error guardando documento:", err);
+      // Fallback a solo local si falla
+      seedRef.current = html;
+      setDirty(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isSaving, projectId, doc, specId, token, storageKey]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (dirty && !isSaving) {
+          onSave();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [dirty, isSaving, onSave]);
 
 
 
@@ -167,6 +203,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
       if (!editorRef.current) return;
       const md = htmlToMd(editorRef.current);
       await navigator.clipboard.writeText(md);
+      setToastMessage("Copiado exitosamente");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     } catch {}
@@ -200,7 +237,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
           <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-semibold text-slate-800">{fileName}</span>
           {specName && <span className="text-[11px] text-slate-400">· {specName}</span>}
-          {dirty && <Badge tone="amber">Sin guardar</Badge>}
+          {dirty && <div className="h-2.5 w-2.5 rounded-full bg-amber-500 flex-shrink-0" title="Cambios sin guardar" />}
         </div>
         <div className="flex items-center gap-1">
           {!expanded && (
@@ -220,8 +257,13 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
             {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </IconBtn>
           {dirty && (
-            <button onClick={onSave} className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700">
-              <Save className="h-3.5 w-3.5" /> Guardar
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Guardar
             </button>
           )}
         </div>
@@ -274,7 +316,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
         />
         {showToast && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-slate-800 text-white px-4 py-2 text-sm shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Copiado exitosamente
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> {toastMessage}
           </div>
         )}
       </div>

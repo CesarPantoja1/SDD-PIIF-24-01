@@ -319,19 +319,13 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
               <span className="text-slate-700 font-medium">{DOCS[slot.doc].sub}{slot.specName ? ` · ${slot.specName}` : ""}</span>
             </div>
             <div className="flex items-center gap-2">
-              {/* Contextual actions: Chat for Specs, Save for others */}
-              {isSpecsView ? (
+              {/* Contextual actions: Chat for Specs */}
+              {isSpecsView && (
                 <button
                   onClick={onToggleChat}
                   className={`inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors ${chatOpen ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-card text-slate-600 hover:bg-slate-50 hover:border-slate-300"}`}
                 >
                   <MessageSquare className="h-3.5 w-3.5" /> Chat IA
-                </button>
-              ) : (
-                <button
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                >
-                  <Save className="h-3.5 w-3.5" /> Guardar
                 </button>
               )}
               

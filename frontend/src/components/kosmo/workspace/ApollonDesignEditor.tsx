@@ -7,6 +7,8 @@ import type { DocKey } from "@/lib/types";
 import { IconBtn, Badge } from "@/components/kosmo/common";
 import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
 import { useProjectSpecs } from "@/hooks/use-project";
+import { useAuth } from "@/hooks/use-auth";
+import { apiClient } from "@/lib/api/client";
 
 /**
  * ApollonDesignEditor — replaces the markdown PhaseEditor for the "design" phase.
@@ -19,7 +21,7 @@ import { useProjectSpecs } from "@/hooks/use-project";
  */
 export function ApollonDesignEditor({
   projectId,
-  scopeKey,
+  scopeKey: specId,
   specName,
   chatOpen,
   onToggleChat,
@@ -38,6 +40,9 @@ export function ApollonDesignEditor({
   onRegenerate: () => void;
   isGenerated: boolean;
 }) {
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+  const scopeKey = specId || "global";
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorRef = useRef<any>(null);
@@ -45,6 +50,8 @@ export function ApollonDesignEditor({
   const [dirty, setDirty] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const storageKey = `kosmo.apollon.${projectId}.${scopeKey}`;
   const [allSpecs] = useProjectSpecs(projectId);
@@ -122,14 +129,42 @@ export function ApollonDesignEditor({
   }, [storageKey, designJson, isGenerated]);
 
   // Manual save (explicit click — model is already auto-persisted, this is UX feedback)
-  const onSave = useCallback(() => {
-    if (!editorRef.current) return;
+  const onSave = useCallback(async () => {
+    if (isSaving || !editorRef.current) return;
+    const json = JSON.stringify(editorRef.current.model);
+    try { localStorage.setItem(storageKey, json); } catch {}
+    
+    setIsSaving(true);
     try {
-      const model = editorRef.current.model;
-      localStorage.setItem(storageKey, JSON.stringify(model));
-    } catch { /* ignore */ }
-    setDirty(false);
-  }, [storageKey]);
+      await apiClient.put(
+        `/projects/${projectId}/documents/design`,
+        { content: json, spec_id: specId || null },
+        token
+      );
+      setDirty(false);
+      setToastMessage("Guardado exitosamente");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } catch (err) {
+      console.error("Error guardando diseño:", err);
+      setDirty(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isSaving, projectId, specId, token, storageKey]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (dirty && !isSaving) {
+          onSave();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [dirty, isSaving, onSave]);
 
   // Export as SVG
   const onExportSvg = useCallback(async () => {
@@ -153,6 +188,7 @@ export function ApollonDesignEditor({
     if (!editorRef.current) return;
     const json = JSON.stringify(editorRef.current.model, null, 2);
     navigator.clipboard?.writeText(json);
+    setToastMessage("Copiado exitosamente");
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
   }, []);
@@ -169,7 +205,7 @@ export function ApollonDesignEditor({
           <Layers className="h-4 w-4 text-emerald-600" />
           <span className="text-sm font-semibold text-slate-800">Diagrama de Clases</span>
           {specName && <span className="text-[11px] text-slate-400">· {specName}</span>}
-          {dirty && <Badge tone="amber">Sin guardar</Badge>}
+          {dirty && <div className="h-2.5 w-2.5 rounded-full bg-amber-500 flex-shrink-0" title="Cambios sin guardar" />}
         </div>
         <div className="flex items-center gap-1">
           {!expanded && (
@@ -192,9 +228,11 @@ export function ApollonDesignEditor({
           {dirty && (
             <button
               onClick={onSave}
-              className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+              disabled={isSaving}
+              className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
             >
-              <Save className="h-3.5 w-3.5" /> Guardar
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Guardar
             </button>
           )}
         </div>
@@ -230,7 +268,7 @@ export function ApollonDesignEditor({
         )}
         {showToast && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-slate-800 text-white px-4 py-2 text-sm shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Copiado exitosamente
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> {toastMessage}
           </div>
         )}
       </div>
