@@ -8,7 +8,7 @@ import {
   Zap, Folder, FolderOpen, Terminal, Sun, Moon, MessageSquare, X, ArrowRight,
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, List, ListOrdered,
   Quote, Code2, Minus, Table as TableIcon, Link as LinkIcon, Undo2, Redo2,
-  Copy, Download, Maximize2, Wand2, RefreshCw, Save, PanelLeft,
+  Copy, Download, Maximize2, Minimize2, Wand2, RefreshCw, Save, PanelLeft,
   ClipboardList, Brain, Lock, GitCommit, GitMerge, ArrowDownToLine, ArrowUpFromLine,
   Trash2, FileCode2,
 } from "lucide-react";
@@ -57,6 +57,8 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
   const seedRef = useRef<string>("");
   const [dirty, setDirty] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [loadedFromBackend, setLoadedFromBackend] = useState(false);
   const storageKey = `kosmo.phase.${projectId}.${scopeKey}`;
 
@@ -160,9 +162,39 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
 
 
 
+  const onCopyMd = async () => {
+    try {
+      if (!editorRef.current) return;
+      const md = htmlToMd(editorRef.current);
+      await navigator.clipboard.writeText(md);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } catch {}
+  };
+
+  const onDownloadMd = () => {
+    try {
+      if (!editorRef.current) return;
+      const md = htmlToMd(editorRef.current);
+      const blob = new Blob([md], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {}
+  };
+
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col h-full min-h-0">
-      {/* Header */}
+    <>
+      {expanded && (
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" onClick={() => setExpanded(false)} />
+      )}
+      <div className={expanded ? "fixed inset-8 z-50 rounded-2xl border border-border bg-card shadow-2xl flex flex-col" : "rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col h-full min-h-0"}>
+        {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-5 py-3 shrink-0">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
@@ -171,16 +203,22 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
           {dirty && <Badge tone="amber">Sin guardar</Badge>}
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={onToggleOutline} title={outlineOpen ? "Cerrar contenidos" : "Abrir contenidos"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${outlineOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
-            <PanelLeft className="h-3.5 w-3.5" /> Contenidos
-          </button>
-          <button onClick={onToggleChat} title={chatOpen ? "Cerrar chat IA" : "Abrir chat IA"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${chatOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
-            <MessageSquare className="h-3.5 w-3.5" /> Chat IA
-          </button>
-          <div className="mx-1 h-5 w-px bg-slate-200" />
-          <IconBtn title="Copiar" onClick={() => navigator.clipboard?.writeText(editorRef.current?.innerText || "")}><Copy className="h-4 w-4" /></IconBtn>
-          <IconBtn title="Descargar"><Download className="h-4 w-4" /></IconBtn>
-          <IconBtn title="Expandir"><Maximize2 className="h-4 w-4" /></IconBtn>
+          {!expanded && (
+            <>
+              <button onClick={onToggleOutline} title={outlineOpen ? "Cerrar contenidos" : "Abrir contenidos"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${outlineOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
+                <PanelLeft className="h-3.5 w-3.5" /> Contenidos
+              </button>
+              <button onClick={onToggleChat} title={chatOpen ? "Cerrar chat IA" : "Abrir chat IA"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${chatOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
+                <MessageSquare className="h-3.5 w-3.5" /> Chat IA
+              </button>
+              <div className="mx-1 h-5 w-px bg-slate-200" />
+            </>
+          )}
+          <IconBtn title="Copiar" onClick={onCopyMd}><Copy className="h-4 w-4" /></IconBtn>
+          <IconBtn title="Descargar" onClick={onDownloadMd}><Download className="h-4 w-4" /></IconBtn>
+          <IconBtn title={expanded ? "Restaurar" : "Expandir"} onClick={() => setExpanded(!expanded)}>
+            {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </IconBtn>
           {dirty && (
             <button onClick={onSave} className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700">
               <Save className="h-3.5 w-3.5" /> Guardar
@@ -234,8 +272,14 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
           onBlur={() => setFocused(false)}
           className={`prose-kosmo max-w-none px-8 py-7 flex-1 min-h-0 overflow-y-auto kosmo-scroll focus:outline-none ${focused ? "ring-1 ring-indigo-200/60 ring-inset" : ""}`}
         />
+        {showToast && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-slate-800 text-white px-4 py-2 text-sm shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Copiado exitosamente
+          </div>
+        )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
