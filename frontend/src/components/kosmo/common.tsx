@@ -153,11 +153,12 @@ export function PromptEditButton({ onClick }: { onClick: () => void }) {
 }
 
 
-export function ProjectTree({ projectId, view, onPick, onSettings }: {
+export function ProjectTree({ projectId, view, onPick, onSettings, disabled = false }: {
   projectId: string;
   view: View;
   onPick: (specId: string | null, doc: DocKey) => void;
   onSettings: () => void;
+  disabled?: boolean;
 }) {
   const [specs] = useProjectSpecs(projectId);
   const [generated, , { isLoaded: generatedLoaded }] = useGenerated(projectId);
@@ -172,12 +173,15 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
     return generatedLoaded && !!generated[docKey(specId, doc)];
   };
 
+  const disabledCls = "opacity-40 cursor-not-allowed pointer-events-none";
+
   return (
     <div className="ml-5 mt-0.5 border-l border-border pl-2">
       {/* Discovery (project-level) */}
       <button
-        onClick={() => onPick(null, "brief")}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${isActive(null, "brief") ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-white"}`}
+        onClick={() => !disabled && onPick(null, "brief")}
+        disabled={disabled}
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${disabled ? disabledCls : isActive(null, "brief") ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-white"}`}
       >
         <Compass className="h-3.5 w-3.5" />
         <span>Discovery</span>
@@ -187,8 +191,9 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
 
       {/* Specs overview (global) */}
       <button
-        onClick={() => onPick(null, "specs")}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${isActive(null, "specs") ? "bg-violet-50 text-violet-700 font-medium" : "text-slate-600 hover:bg-white"}`}
+        onClick={() => !disabled && onPick(null, "specs")}
+        disabled={disabled}
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${disabled ? disabledCls : isActive(null, "specs") ? "bg-violet-50 text-violet-700 font-medium" : "text-slate-600 hover:bg-white"}`}
       >
         <Layers className="h-3.5 w-3.5" />
         <span>Specifications</span>
@@ -196,18 +201,19 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
       </button>
 
       {/* Specs */}
-      <div className="mt-2 px-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className={`mt-2 px-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${disabled ? "opacity-40" : ""}`}>
         <span>Specs · {specs.length}</span>
       </div>
       {specs.length === 0 && (
-        <div className="px-2 py-1.5 text-[11px] italic text-slate-400">Genera specs desde Especificaciones</div>
+        <div className={`px-2 py-1.5 text-[11px] italic text-slate-400 ${disabled ? "opacity-40" : ""}`}>Genera specs desde Especificaciones</div>
       )}
       {specs.map((s) => {
         const open = !!openSpecs[s.id];
         return (
-          <div key={s.id} className="mt-0.5">
+          <div key={s.id} className={`mt-0.5 ${disabled ? disabledCls : ""}`}>
             <button
-              onClick={() => setOpenSpecs({ ...openSpecs, [s.id]: !open })}
+              onClick={() => !disabled && setOpenSpecs({ ...openSpecs, [s.id]: !open })}
+              disabled={disabled}
               className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] text-slate-700 hover:bg-white"
             >
               {open ? <ChevronDown className="h-3 w-3 text-slate-400" /> : <ChevronRight className="h-3 w-3 text-slate-400" />}
@@ -224,7 +230,8 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
                   return (
                     <button
                       key={d}
-                      onClick={() => onPick(s.id, d)}
+                      onClick={() => !disabled && onPick(s.id, d)}
+                      disabled={disabled}
                       className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-[12.5px] ${active ? "bg-indigo-50 text-indigo-700 font-medium" : isGen ? "text-slate-600 hover:bg-white" : "text-slate-400 hover:bg-white"}`}
                     >
                       <Icon className={`h-3.5 w-3.5 shrink-0 ${isGen || active ? "" : "text-slate-300"}`} />
@@ -239,6 +246,15 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
           </div>
         );
       })}
+
+      {disabled && (
+        <div className="mt-3 mx-1 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-[11px] text-amber-800 font-medium">
+            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0" />
+            Configura los agentes para habilitar el workspace
+          </div>
+        </div>
+      )}
 
       <button
         onClick={onSettings}

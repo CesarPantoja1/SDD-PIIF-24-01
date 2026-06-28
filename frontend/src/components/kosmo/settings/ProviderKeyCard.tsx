@@ -60,6 +60,10 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
     setTesting(true);
     setTestResult(null);
     try {
+      if (canSave) {
+        await onSave(draft);
+        setMode("view");
+      }
       const key = mode === "edit" ? draft : undefined;
       const result = await onTest(key);
       setTestResult(result);

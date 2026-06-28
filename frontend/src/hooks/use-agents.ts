@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./use-auth";
 import { apiClient } from "@/lib/api/client";
 import { DEFAULT_AGENTS } from "@/lib/constants";
-import type { AgentsConfig, AgentSlotKey, ProviderKey } from "@/lib/types";
+import type { AgentsConfig, AgentSlotKey, ProviderKey, ApiKeys } from "@/lib/types";
+import { useApiKeys } from "./use-api-keys";
 
 type BackendConfig = { provider: string; model: string; system_prompt: string };
 
@@ -11,6 +12,7 @@ export function useAgentPrefs() {
   const qc = useQueryClient();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
+  const { keys } = useApiKeys();
 
   // Load agent configs from backend
   const { data: backendData } = useQuery({
@@ -28,8 +30,8 @@ export function useAgentPrefs() {
 
   // Derive AgentsConfig reactively from backend data (no disabled query needed)
   const agents = useMemo<AgentsConfig>(() => {
-    return mergeBackendToAgents(backendData?.configs ?? {});
-  }, [backendData]);
+    return mergeBackendToAgents(backendData?.configs ?? {}, keys);
+  }, [backendData, keys]);
 
   const setPrefs = useCallback(
     async (next: AgentsConfig) => {
@@ -90,13 +92,17 @@ export function useProjectAgents(projectId: string) {
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-function mergeBackendToAgents(configs: Record<string, BackendConfig>): AgentsConfig {
+function mergeBackendToAgents(configs: Record<string, BackendConfig>, keys: ApiKeys): AgentsConfig {
   const result = { ...DEFAULT_AGENTS, configured: false };
   let hasAny = false;
+  let allHaveKeys = true;
 
   for (const [slotKey, cfg] of Object.entries(configs)) {
     if (!cfg?.provider || !cfg?.model) continue;
     hasAny = true;
+    if (!keys[cfg.provider as keyof ApiKeys]) {
+      allHaveKeys = false;
+    }
 
   if (slotKey === "clarifier") {
     result.clarifier = { provider: cfg.provider as ProviderKey, model: cfg.model };
@@ -117,7 +123,7 @@ function mergeBackendToAgents(configs: Record<string, BackendConfig>): AgentsCon
     }
   }
 
-  result.configured = hasAny;
+  result.configured = hasAny && allHaveKeys;
   return result;
 }
 

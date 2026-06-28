@@ -45,7 +45,8 @@ import {
 
 import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
 
-export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenProject: (id: string) => void; onSettings: (id: string) => void; onNew: () => void }) {
+export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureAgents }: { onOpenProject: (id: string) => void; onSettings: (id: string) => void; onNew: () => void; onConfigureAgents: (id: string) => void }) {
+  const [agents] = useAgentPrefs();
   const PROJECTS = useVisibleProjects();
   const [q, setQ] = useState("");
   const status: ProjectStatus | "all" = "all";
@@ -139,6 +140,13 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenPr
                 <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">Tokens</div><div className="text-sm font-semibold tabular-nums">{fmtTokens(p.tokens)}</div></div>
                 <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">Costo</div><div className="text-sm font-semibold tabular-nums">${p.cost.toFixed(0)}</div></div>
               </div>
+              {!agents.configured && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2">
+                  <Bot className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <span className="flex-1 text-[11px] text-amber-800 font-medium">Agentes sin configurar</span>
+                  <button onClick={() => onConfigureAgents(p.id)} className="rounded-md bg-amber-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-700 transition">Configurar</button>
+                </div>
+              )}
               <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>Actualizado {timeAgo(p.updatedAt)}</span>
                 <button onClick={() => onOpenProject(p.id)} className="inline-flex items-center gap-1 font-medium text-indigo-600 hover:text-indigo-700">Abrir <ArrowRight className="h-3 w-3" /></button>
@@ -153,6 +161,7 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenPr
               <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400">
                 <th className="px-4 py-2 font-medium">Proyecto</th>
                 <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 font-medium">Agentes</th>
                 <th className="px-4 py-2 font-medium">Tags</th>
                 <th className="px-4 py-2 font-medium text-right">Specs</th>
                 <th className="px-4 py-2 font-medium text-right">Tokens</th>
@@ -174,6 +183,7 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew }: { onOpenPr
                     </button>
                   </td>
                   <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
+                  <td className="px-4 py-2.5">{agents.configured ? <Badge tone="green">Listos</Badge> : <button onClick={() => onConfigureAgents(p.id)} className="inline-flex items-center gap-1"><Badge tone="amber">Sin configurar</Badge></button>}</td>
                   <td className="px-4 py-2.5"><div className="flex flex-wrap gap-1">{p.tags.map((t) => <span key={t} className="text-[10px] rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">#{t}</span>)}</div></td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{p.specsCount}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{fmtTokens(p.tokens)}</td>

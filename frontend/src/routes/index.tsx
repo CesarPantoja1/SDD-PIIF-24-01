@@ -8,6 +8,7 @@ import type { View } from "@/lib/types";
 import { useVisibleProjects } from "@/hooks/use-project";
 import { useAuth } from "@/hooks/use-auth";
 import { useProfile } from "@/hooks/use-profile";
+import { useAgentPrefs } from "@/hooks/use-agents";
 import {
   SidebarItem, SidebarProjectRow, MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
@@ -51,6 +52,7 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
   const [gitOpen, setGitOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const visibleProjects = useVisibleProjects();
+  const [agents] = useAgentPrefs();
   const [profile] = useProfile();
   const openApiKeys = () => setView({ kind: "global-settings", tab: "API Keys" });
 
@@ -101,6 +103,7 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
                     view={view}
                     onPick={(specId, doc) => setView({ kind: "workspace", projectId: p.id, specId, doc })}
                     onSettings={() => setView({ kind: "project-settings", projectId: p.id, tab: "General" })}
+                    disabled={!agents.configured}
                   />
                 )}
               </div>
@@ -146,8 +149,8 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
 
         <div className="flex-1 min-h-0 overflow-hidden">
           {view.kind === "home" && <HomeView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onNew={() => setView({ kind: "new-project" })} onOpenWorkspace={() => setView({ kind: "my-workspace" })} />}
-          {view.kind === "my-workspace" && <MyWorkspaceView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onSettings={(id) => setView({ kind: "project-settings", projectId: id, tab: "General" })} onNew={() => setView({ kind: "new-project" })} />}
-          {view.kind === "new-project" && <NewProjectView onConfigureAgents={() => setView({ kind: "global-settings", tab: "Coding Agents" })} onGenerate={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief", autoStartBrief: false })} />}
+          {view.kind === "my-workspace" && <MyWorkspaceView onOpenProject={(id) => setView({ kind: "workspace", projectId: id, specId: null, doc: "brief" })} onSettings={(id) => setView({ kind: "project-settings", projectId: id, tab: "General" })} onNew={() => setView({ kind: "new-project" })} onConfigureAgents={(id) => setView({ kind: "project-settings", projectId: id, tab: "Coding Agents" })} />}
+          {view.kind === "new-project" && <NewProjectView onCreated={() => setView({ kind: "my-workspace" })} />}
           {view.kind === "profile" && <ProfileView />}
           {view.kind === "about" && <AboutView />}
           {view.kind === "global-settings" && <GlobalSettings tab={view.tab} onTab={(t) => setView({ kind: "global-settings", tab: t })} onOpenApiKeys={openApiKeys} />}
