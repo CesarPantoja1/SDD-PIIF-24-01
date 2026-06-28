@@ -69,25 +69,54 @@ export function useAgentPrefs() {
 
 export function useProjectAgents(projectId: string) {
   const qc = useQueryClient();
-  const { user } = useAuth();
-  const [prefs] = useAgentPrefs();
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+  const { keys } = useApiKeys();
   const key = ["project_agents", projectId];
 
-  const { data } = useQuery({
+  const { data: backendData } = useQuery({
     queryKey: key,
-    enabled: false,
-    queryFn: async (): Promise<AgentsConfig> => prefs,
-    initialData: prefs,
+    enabled: !!token && !!projectId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      return apiClient.get<{ configs: Record<string, BackendConfig> }>(
+        `/agents/configs?project_id=${projectId}`,
+        token,
+      );
+    },
   });
+
+  const agents = useMemo<AgentsConfig>(() => {
+    return mergeBackendToAgents(backendData?.configs ?? {}, keys);
+  }, [backendData, keys]);
 
   const setAgents = useCallback(
     async (next: AgentsConfig) => {
-      qc.setQueryData(key, next);
+      qc.setQueryData(key, agentsToBackendConfigs(next));
+
+      if (token && projectId) {
+        try {
+          const slotUpdates = getChangedSlots(agents, next);
+          for (const slotKey of slotUpdates) {
+            const spec = getSpecBySlotKey(next, slotKey);
+            if (spec) {
+              await apiClient.put(
+                `/agents/configs/project_${projectId}.${slotKey}`,
+                { provider: spec.provider, model: spec.model, system_prompt: "" },
+                token,
+              );
+            }
+          }
+          qc.invalidateQueries({ queryKey: key });
+        } catch {
+          /* sync failed */
+        }
+      }
     },
-    [qc, projectId],
+    [qc, projectId, token, agents],
   );
 
-  return [data ?? prefs, setAgents] as const;
+  return [agents, setAgents] as const;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────

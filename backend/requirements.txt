@@ -15,6 +15,9 @@ langchain-anthropic
 langchain-deepseek
 langchain>=1.3.9,<2.0.0
 langgraph-checkpoint-postgres
+langgraph
+wcmatch
+langchain-google-genai==3.2.0
 
 # deepagents must be installed separately after all other packages to avoid
 # httpx version conflict (supabase requires httpx<0.28, google-genai requires >=0.28.1):

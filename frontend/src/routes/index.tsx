@@ -103,7 +103,6 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
                     view={view}
                     onPick={(specId, doc) => setView({ kind: "workspace", projectId: p.id, specId, doc })}
                     onSettings={() => setView({ kind: "project-settings", projectId: p.id, tab: "General" })}
-                    disabled={!agents.configured}
                   />
                 )}
               </div>

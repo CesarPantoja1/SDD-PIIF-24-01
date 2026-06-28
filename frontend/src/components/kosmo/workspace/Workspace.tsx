@@ -70,7 +70,7 @@ export function buildSequence(specs: SpecRef[]): DocSlot[] {
 export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNav, onHome, chatOpen, onToggleChat, onCloseChat, gitOpen, onToggleGit }: { projectId: string; specId: string | null; doc: DocKey; autoStartBrief?: boolean; onNav: (specId: string | null, doc: DocKey) => void; onHome: () => void; chatOpen: boolean; onToggleChat: () => void; onCloseChat: () => void; gitOpen: boolean; onToggleGit: () => void }) {
   const { session } = useAuth();
   const token = session?.access_token ?? null;
-  const [agents] = useAgentPrefs();
+  const [agents] = useProjectAgents(projectId);
   const project = useProjectById(projectId);
   const [specs] = useProjectSpecs(projectId);
   const [generated, setGenerated, { isLoaded: generatedLoaded }] = useGenerated(projectId);
@@ -263,7 +263,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 min-w-0 flex flex-col border-r border-border">
           <div className="flex-1 min-h-0 flex px-4 py-6 gap-5 overflow-hidden">
-            {outlineOpen && slot.doc !== "code" && slot.doc !== "design" && slot.doc !== "specs" && <DocOutline editorScope={currentKey} />}
+            {outlineOpen && slot.doc !== "code" && slot.doc !== "design" && slot.doc !== "specs" && <DocOutline key={`${currentKey}-${editorKey}`} editorScope={currentKey} />}
             <div className="flex-1 min-w-0 min-h-0">
               {slot.doc === "specs" ? (
                 <SpecsOverview
@@ -334,6 +334,16 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 <button disabled className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed">
                   Cargando estado…
                 </button>
+              ) : !agents.configured ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md font-medium">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                    Configura agentes globales o locales
+                  </div>
+                  <button disabled className="inline-flex items-center gap-1.5 rounded-md bg-indigo-300 px-3.5 py-1.5 text-xs font-semibold text-white cursor-not-allowed">
+                    <Sparkles className="h-3.5 w-3.5" /> Generar con IA
+                  </button>
+                </div>
               ) : isDiscovery ? (
                 /* Discovery: Generar brief → Ir a Specs */
                 !discoveryGenerated ? (

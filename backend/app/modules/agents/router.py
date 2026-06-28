@@ -162,8 +162,11 @@ async def generate_discovery_stream(
 # ── Agent Config CRUD ───────────────────────────────────────────
 
 @router.get("/configs", response_model=AgentConfigsResponse)
-async def get_configs(current_user: CurrentUser = Depends(get_current_user)):
-    configs = AgentConfigService().get_or_default(current_user.access_token, current_user.id)
+async def get_configs(
+    project_id: str | None = None,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    configs = AgentConfigService().get_or_default(current_user.access_token, current_user.id, project_id)
     rubrics = dict(DEFAULT_RUBRICS)
     return AgentConfigsResponse(configs={**configs, "_rubrics": rubrics})
 
