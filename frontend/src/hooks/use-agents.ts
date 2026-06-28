@@ -36,7 +36,7 @@ export function useAgentPrefs() {
       const queryKey = ["agent_configs", session?.user?.id];
 
       // 1. Optimistic: update cache immediately so UI reacts instantly
-      qc.setQueryData(queryKey, { configs: agentsToBackendConfigs(next) });
+      qc.setQueryData(queryKey, agentsToBackendConfigs(next));
 
       // 2. Sync changed slots to backend
       if (token) {

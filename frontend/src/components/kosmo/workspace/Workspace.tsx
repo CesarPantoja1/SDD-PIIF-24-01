@@ -203,7 +203,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
             </div>
             <div className="text-left flex-1 min-w-0">
               <div className="text-sm font-medium text-violet-900">Especificaciones</div>
-              <div className="text-[11px] text-slate-400">Módulos del producto</div>
+              <div className="text-[11px] text-slate-400">Especificaciones del producto</div>
             </div>
             {specs.length > 0
               ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> {specs.length} módulos</Badge>
@@ -272,7 +272,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   generated={generated}
                   generatedLoaded={generatedLoaded}
                   onNavigateSpec={(sId, dk) => onNav(sId, dk)}
-                  onGenerateSpecs={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Módulos del Producto" })}
+                  onGenerateSpecs={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Especificaciones del Producto" })}
                 />
               ) : slot.doc === "code" ? (
                 <CodeGenView
@@ -361,7 +361,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 /* Specs view: Generar specs → Ir al primer módulo */
                 specs.length === 0 ? (
                   <button
-                    onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Módulos del Producto" })}
+                    onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Especificaciones del Producto" })}
                     className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"
                   >
                     <Sparkles className="h-3.5 w-3.5" /> Generar Specs con IA

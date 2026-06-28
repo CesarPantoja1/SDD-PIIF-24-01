@@ -20,6 +20,12 @@ from app.modules.agents.prompts import (
     SPECS_CREATOR_DEFAULT_PROMPT, SPECS_RUBRIC,
     REQUIREMENTS_CREATOR_DEFAULT_PROMPT, REQUIREMENTS_RUBRIC,
 )
+LANGCHAIN_PROVIDER_MAP = {
+    "google": "google_genai",
+    "openai": "openai",
+    "anthropic": "anthropic",
+    "deepseek": "deepseek",
+}
 
 
 def run_discovery_agent(
@@ -37,8 +43,9 @@ def run_discovery_agent(
     Returns dict with 'content' and 'evaluations' keys, or raises HTTPException.
     """
 
+    lc_provider = LANGCHAIN_PROVIDER_MAP.get(provider, provider)
     resolved_model = init_chat_model(
-        f"{provider}:{model_name}",
+        f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
     )
@@ -147,8 +154,9 @@ def run_specs_agent(
     Returns dict with 'specs' and 'evaluations' keys.
     """
 
+    lc_provider = LANGCHAIN_PROVIDER_MAP.get(provider, provider)
     resolved_model = init_chat_model(
-        f"{provider}:{model_name}",
+        f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
     )
@@ -234,8 +242,9 @@ def run_requirements_agent(
     Returns dict with 'content' and 'evaluations' keys.
     """
 
+    lc_provider = LANGCHAIN_PROVIDER_MAP.get(provider, provider)
     resolved_model = init_chat_model(
-        f"{provider}:{model_name}",
+        f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
     )

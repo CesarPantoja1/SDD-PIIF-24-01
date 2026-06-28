@@ -11,6 +11,11 @@ from app.modules.agents.prompts import (
 )
 
 DEFAULT_CONFIGS: dict[str, dict] = {
+    "clarifier": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+        "system_prompt": "",
+    },
     "discovery.creator": {
         "provider": "openai",
         "model": "gpt-4o",

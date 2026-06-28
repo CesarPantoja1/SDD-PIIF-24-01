@@ -1,6 +1,9 @@
 import json
+import logging
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 
@@ -25,7 +28,11 @@ def encrypt_keys(keys: dict[str, str]) -> str:
 def decrypt_keys(ciphertext: str) -> dict[str, str]:
     if not ciphertext:
         return {}
-    return json.loads(_fernet().decrypt(ciphertext.encode()))
+    try:
+        return json.loads(_fernet().decrypt(ciphertext.encode()))
+    except InvalidToken:
+        logger.warning("No se pudo desencriptar las claves API. Es posible que ENCRYPTION_KEY haya cambiado.")
+        return {}
 
 
 def mask_key(key: str) -> str:

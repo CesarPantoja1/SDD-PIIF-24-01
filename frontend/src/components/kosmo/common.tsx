@@ -191,13 +191,13 @@ export function ProjectTree({ projectId, view, onPick, onSettings }: {
         className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${isActive(null, "specs") ? "bg-violet-50 text-violet-700 font-medium" : "text-slate-600 hover:bg-white"}`}
       >
         <Layers className="h-3.5 w-3.5" />
-        <span>Especificaciones</span>
+        <span>Specifications</span>
         <span className="ml-auto text-[10px] text-slate-400">{specs.length > 0 ? `${specs.length}` : ""}</span>
       </button>
 
       {/* Specs */}
       <div className="mt-2 px-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        <span>Módulos · {specs.length}</span>
+        <span>Specs · {specs.length}</span>
       </div>
       {specs.length === 0 && (
         <div className="px-2 py-1.5 text-[11px] italic text-slate-400">Genera specs desde Especificaciones</div>
