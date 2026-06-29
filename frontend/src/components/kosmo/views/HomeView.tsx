@@ -44,8 +44,10 @@ import {
 } from "@/components/kosmo/common";
 
 import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
+import { useTranslation } from "react-i18next";
 
 export function HomeView({ onOpenProject, onNew, onOpenWorkspace }: { onOpenProject: (id: string) => void; onNew: () => void; onOpenWorkspace: () => void }) {
+  const { t } = useTranslation();
   const PROJECTS = useVisibleProjects();
   const totalSpend = PROJECTS.reduce((a, p) => a + p.cost, 0);
   const totalTokens = PROJECTS.reduce((a, p) => a + p.tokens, 0);
@@ -59,31 +61,31 @@ export function HomeView({ onOpenProject, onNew, onOpenWorkspace }: { onOpenProj
     <div className="h-full overflow-y-auto px-10 py-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Bienvenido</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Resumen de tus proyectos y consumo en KOSMO.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('home.welcome', 'Bienvenido')}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t('home.summary', 'Resumen de tus proyectos y consumo en KOSMO.')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onOpenWorkspace} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-            <Briefcase className="h-4 w-4" /> Ver workspace
+            <Briefcase className="h-4 w-4" /> {t('home.viewWorkspace', 'Ver workspace')}
           </button>
           <button onClick={onNew} className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-            <Plus className="h-4 w-4" /> Nuevo proyecto
+            <Plus className="h-4 w-4" /> {t('common.newProject')}
           </button>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">
-        <Stat label="Gasto total (MTD)" value={`$${totalSpend.toFixed(2)}`} trend="+9.6%" />
-        <Stat label="Tokens consumidos" value={fmtTokens(totalTokens)} trend="+12.4%" />
-        <Stat label="Proyectos activos" value={`${active} / ${PROJECTS.length}`} trend="+1" />
-        <Stat label="Specs en curso" value={String(PROJECTS.reduce((a, p) => a + p.specsCount, 0))} trend="+2" />
+        <Stat label={t('home.totalSpend', 'Gasto total (MTD)')} value={`$${totalSpend.toFixed(2)}`} trend="+9.6%" />
+        <Stat label={t('home.tokensConsumed', 'Tokens consumidos')} value={fmtTokens(totalTokens)} trend="+12.4%" />
+        <Stat label={t('home.activeProjects', 'Proyectos activos')} value={`${active} / ${PROJECTS.length}`} trend="+1" />
+        <Stat label={t('home.specsInProgress', 'Specs en curso')} value={String(PROJECTS.reduce((a, p) => a + p.specsCount, 0))} trend="+2" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-indigo-500" /><h3 className="font-semibold">Proyectos recientes</h3></div>
-            <button onClick={onOpenWorkspace} className="text-xs text-indigo-600 hover:underline">Ver todos →</button>
+            <div className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-indigo-500" /><h3 className="font-semibold">{t('home.recentProjects', 'Proyectos recientes')}</h3></div>
+            <button onClick={onOpenWorkspace} className="text-xs text-indigo-600 hover:underline">{t('home.viewAll', 'Ver todos →')}</button>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {recent.slice(0, 4).map((p) => (
@@ -109,7 +111,7 @@ export function HomeView({ onOpenProject, onNew, onOpenWorkspace }: { onOpenProj
         </Card>
 
         <Card>
-          <CardHeader title="Top por gasto" icon={Zap} />
+          <CardHeader title={t('home.topSpend', 'Top por gasto')} icon={Zap} />
           <div className="mt-4 space-y-3">
             {top.map((p) => (
               <button key={p.id} onClick={() => onOpenProject(p.id)} className="w-full text-left">
@@ -128,7 +130,7 @@ export function HomeView({ onOpenProject, onNew, onOpenWorkspace }: { onOpenProj
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Actividad reciente" icon={Sparkles} />
+          <CardHeader title={t('home.recentActivity', 'Actividad reciente')} icon={Sparkles} />
           <ul className="mt-4 divide-y divide-slate-100">
             {activities.map((a, i) => (
               <li key={i} className="flex items-center gap-3 py-2.5">
@@ -143,7 +145,7 @@ export function HomeView({ onOpenProject, onNew, onOpenWorkspace }: { onOpenProj
         </Card>
 
         <Card>
-          <CardHeader title="Atajos" icon={Zap} />
+          <CardHeader title={t('home.shortcuts', 'Atajos')} icon={Zap} />
           <div className="mt-4 space-y-2">
             <button onClick={onNew} className="flex w-full items-center gap-3 rounded-md border border-border px-3 py-2.5 text-sm hover:bg-slate-50">
               <div className="grid h-8 w-8 place-items-center rounded-md bg-indigo-50 text-indigo-600"><Plus className="h-4 w-4" /></div>

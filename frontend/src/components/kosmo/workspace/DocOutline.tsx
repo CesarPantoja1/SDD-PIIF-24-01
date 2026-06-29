@@ -43,7 +43,10 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
+import { useTranslation } from "react-i18next";
+
 export function DocOutline({ editorScope }: { editorScope: string }) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<{ level: number; text: string; id: string }[]>([]);
 
   useEffect(() => {
@@ -83,9 +86,9 @@ export function DocOutline({ editorScope }: { editorScope: string }) {
 
   return (
     <aside className="hidden lg:flex flex-col shrink-0 self-stretch min-h-0 pr-3 max-w-xs">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-2 mb-2">Contenido</div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-2 mb-2">{t('workspace.contents')}</div>
       <nav className="space-y-0.5 text-[12.5px] border-l border-border overflow-y-auto kosmo-scroll min-h-0 pr-1">
-        {items.length === 0 && <div className="pl-3 pr-3 text-[11px] italic text-slate-400 whitespace-nowrap">Sin encabezados</div>}
+        {items.length === 0 && <div className="pl-3 pr-3 text-[11px] italic text-slate-400 whitespace-nowrap">{t('workspace.noHeadings')}</div>}
         {items.map((it) => (
           <a
             key={it.id}

@@ -33,6 +33,7 @@ import { apiClient } from "@/lib/api/client";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import { MOCK_VARIANTS, variantIndexFromSpecNames } from "@/lib/mock-data";
+import { useTranslation } from "react-i18next";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
   useProjectSpecs, useVisibleProjects,
@@ -53,6 +54,7 @@ function isProjectLevelBrief(doc: DocKey, projectId: string): boolean {
 
 export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specName, chatOpen, onToggleChat, outlineOpen, onToggleOutline, onRegenerate, isGenerated }: { projectId: string; specId?: string | null; scopeKey: string; doc: DocKey; fileName: string; specName: string | null; chatOpen: boolean; onToggleChat: () => void; outlineOpen: boolean; onToggleOutline: () => void; onRegenerate: () => void; isGenerated: boolean; }) {
   const { session } = useAuth();
+  const { t } = useTranslation();
   const token = session?.access_token ?? null;
   const editorRef = useRef<HTMLDivElement>(null);
   const seedRef = useRef<string>("");
@@ -185,7 +187,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
       );
       seedRef.current = editorRef.current?.innerHTML ?? "";
       setDirty(false);
-      setToastMessage("Guardado exitosamente");
+      setToastMessage(t('common.saved', "Guardado exitosamente"));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     } catch (err) {
@@ -219,7 +221,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
       if (!editorRef.current) return;
       const md = htmlToMd(editorRef.current);
       await navigator.clipboard.writeText(md);
-      setToastMessage("Copiado exitosamente");
+      setToastMessage(t('common.copied', "Copiado exitosamente"));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     } catch {}
@@ -258,18 +260,18 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
         <div className="flex items-center gap-1">
           {!expanded && (
             <>
-              <button onClick={onToggleOutline} title={outlineOpen ? "Cerrar contenidos" : "Abrir contenidos"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${outlineOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
-                <PanelLeft className="h-3.5 w-3.5" /> Contenidos
+              <button onClick={onToggleOutline} title={outlineOpen ? t('common.close') : t('common.open')} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${outlineOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
+                <PanelLeft className="h-3.5 w-3.5" /> {t('workspace.outline')}
               </button>
-              <button onClick={onToggleChat} title={chatOpen ? "Cerrar chat IA" : "Abrir chat IA"} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${chatOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
-                <MessageSquare className="h-3.5 w-3.5" /> Chat IA
+              <button onClick={onToggleChat} title={chatOpen ? t('workspace.closeChat') : t('workspace.openChat')} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${chatOpen ? "bg-indigo-50 text-indigo-700" : "text-slate-700 hover:bg-slate-100"}`}>
+                <MessageSquare className="h-3.5 w-3.5" /> {t('workspace.chat')}
               </button>
               <div className="mx-1 h-5 w-px bg-slate-200" />
             </>
           )}
-          <IconBtn title="Copiar" onClick={onCopyMd}><Copy className="h-4 w-4" /></IconBtn>
-          <IconBtn title="Descargar" onClick={onDownloadMd}><Download className="h-4 w-4" /></IconBtn>
-          <IconBtn title={expanded ? "Restaurar" : "Expandir"} onClick={() => setExpanded(!expanded)}>
+          <IconBtn title={t('common.copy')} onClick={onCopyMd}><Copy className="h-4 w-4" /></IconBtn>
+          <IconBtn title={t('common.download')} onClick={onDownloadMd}><Download className="h-4 w-4" /></IconBtn>
+          <IconBtn title={expanded ? t('common.restore') : t('common.expand')} onClick={() => setExpanded(!expanded)}>
             {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </IconBtn>
           {dirty && (
@@ -279,7 +281,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
               className="ml-1 inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              Guardar
+              {t('common.save')}
             </button>
           )}
         </div>
@@ -314,9 +316,9 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
             <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <FileText className="h-8 w-8 text-slate-300" />
             </div>
-            <h3 className="text-lg font-medium text-slate-800">Documento vacío</h3>
+            <h3 className="text-lg font-medium text-slate-800">{t('workspace.emptyDocument')}</h3>
             <p className="mt-1 text-sm text-slate-500 max-w-sm">
-              Este documento aún no ha sido generado. Usa el botón "Generar" en la parte inferior para que la IA proponga el contenido inicial.
+              {t('workspace.emptyDocumentDesc')}
             </p>
           </div>
         )}

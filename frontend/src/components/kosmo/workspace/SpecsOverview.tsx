@@ -8,6 +8,8 @@ import { DOCS, SPEC_DOCS } from "@/lib/constants";
 import { docKey } from "@/lib/storage";
 import { Badge } from "@/components/kosmo/common";
 
+import { useTranslation } from "react-i18next";
+
 /* ── Helpers ── */
 
 const PHASE_INDICATORS: { key: DocKey; label: string; color: string }[] = [
@@ -34,6 +36,7 @@ export function SpecsOverview({
   onNavigateSpec: (specId: string, doc: DocKey) => void;
   onGenerateSpecs: () => void;
 }) {
+  const { t } = useTranslation();
   const hasSpecs = specs.length > 0;
 
   /* ── Empty State ── */
@@ -51,12 +54,10 @@ export function SpecsOverview({
         </div>
 
         <h2 className="text-xl font-semibold text-slate-800 tracking-tight">
-          Define los módulos del producto
+          {t('workspace.specsTitle')}
         </h2>
         <p className="mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
-          La IA analizará tu documento de Discovery para identificar y proponer
-          los módulos funcionales (specs) de tu proyecto. Cada módulo pasará
-          por las fases de Requerimientos, Diseño, Tareas y Código.
+          {t('workspace.specsDesc')}
         </p>
 
         <button
@@ -64,11 +65,11 @@ export function SpecsOverview({
           className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all active:scale-[0.98]"
         >
           <Sparkles className="h-4 w-4" />
-          Generar Specs con IA
+          {t('workspace.generateSpecsWithAI')}
         </button>
 
         <p className="mt-4 text-xs text-slate-400">
-          Puedes editar o agregar specs manualmente después de la generación.
+          {t('workspace.specsFooter')}
         </p>
       </div>
     );
@@ -81,11 +82,10 @@ export function SpecsOverview({
         {/* Header */}
         <div className="mb-6 px-2">
           <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
-            Especificaciones del Producto
+            {t('workspace.productSpecs')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {specs.length} {specs.length === 1 ? "módulo" : "módulos"} identificados.
-            Haz clic en un módulo para ver sus fases de desarrollo.
+            {t('workspace.modulesIdentified', { count: specs.length })}
           </p>
         </div>
 

@@ -1,3 +1,5 @@
+import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import {
@@ -160,6 +162,7 @@ export function ProjectTree({ projectId, view, onPick, onSettings, disabled = fa
   onSettings: () => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const [specs] = useProjectSpecs(projectId);
   const [generated, , { isLoaded: generatedLoaded }] = useGenerated(projectId);
   const [openSpecs, setOpenSpecs] = useLocal<Record<string, boolean>>(`kosmo.project.${projectId}.openSpecs`, Object.fromEntries(specs.map((s) => [s.id, true])));
@@ -184,7 +187,7 @@ export function ProjectTree({ projectId, view, onPick, onSettings, disabled = fa
         className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${disabled ? disabledCls : isActive(null, "brief") ? "bg-indigo-50 text-indigo-700 font-medium" : "text-slate-600 hover:bg-white"}`}
       >
         <Compass className="h-3.5 w-3.5" />
-        <span>Discovery</span>
+        <span>{t('workspace.discovery')}</span>
         
         <span className="ml-auto text-[10px] text-slate-400">brief.md</span>
       </button>
@@ -196,7 +199,7 @@ export function ProjectTree({ projectId, view, onPick, onSettings, disabled = fa
         className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] ${disabled ? disabledCls : isActive(null, "specs") ? "bg-violet-50 text-violet-700 font-medium" : "text-slate-600 hover:bg-white"}`}
       >
         <Layers className="h-3.5 w-3.5" />
-        <span>Specifications</span>
+        <span>{t('workspace.specs')}</span>
         <span className="ml-auto text-[10px] text-slate-400">{specs.length > 0 ? `${specs.length}` : ""}</span>
       </button>
 
@@ -205,7 +208,7 @@ export function ProjectTree({ projectId, view, onPick, onSettings, disabled = fa
         <span>Specs · {specs.length}</span>
       </div>
       {specs.length === 0 && (
-        <div className={`px-2 py-1.5 text-[11px] italic text-slate-400 ${disabled ? "opacity-40" : ""}`}>Genera specs desde Especificaciones</div>
+        <div className={`px-2 py-1.5 text-[11px] italic text-slate-400 ${disabled ? "opacity-40" : ""}`}>{t('workspace.generateFromSpecs', 'Genera specs desde Especificaciones')}</div>
       )}
       {specs.map((s) => {
         const open = !!openSpecs[s.id];
@@ -235,7 +238,7 @@ export function ProjectTree({ projectId, view, onPick, onSettings, disabled = fa
                       className={`flex w-full items-center gap-2 rounded-md px-2 py-1 text-[12.5px] ${active ? "bg-indigo-50 text-indigo-700 font-medium" : isGen ? "text-slate-600 hover:bg-white" : "text-slate-400 hover:bg-white"}`}
                     >
                       <Icon className={`h-3.5 w-3.5 shrink-0 ${isGen || active ? "" : "text-slate-300"}`} />
-                      <span>{D.label}</span>
+                      <span>{t(`workspace.${d}`, D.label)}</span>
                       <span className="ml-auto text-[10px] text-slate-400">{D.file}</span>
                     </button>
                   );

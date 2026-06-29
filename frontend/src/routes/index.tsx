@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Home, Briefcase, Settings, LogOut, User, Sparkles, Plus,
-  MoreHorizontal, Sun, Moon, Info,
+  MoreHorizontal, Sun, Moon, Info, ChevronDown,
 } from "lucide-react";
 import type { View } from "@/lib/types";
 import { useVisibleProjects } from "@/hooks/use-project";
@@ -44,9 +45,11 @@ function KosmoApp() {
 }
 
 function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
+  const { t, i18n } = useTranslation();
   const [view, setView] = useState<View>({ kind: "home" });
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [profileOpen, setProfileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [chatOpen, setChatOpen] = useState(true);
   const [gitOpen, setGitOpen] = useState(false);
@@ -81,16 +84,16 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-3">
-          <SidebarItem icon={Home} label="Home" active={view.kind === "home"} onClick={() => setView({ kind: "home" })} />
-          <SidebarItem icon={Briefcase} label="My Workspace" active={view.kind === "my-workspace"} onClick={() => setView({ kind: "my-workspace" })} />
+          <SidebarItem icon={Home} label={t('sidebar.home', 'Home')} active={view.kind === "home"} onClick={() => setView({ kind: "home" })} />
+          <SidebarItem icon={Briefcase} label={t('sidebar.myWorkspace', 'My Workspace')} active={view.kind === "my-workspace"} onClick={() => setView({ kind: "my-workspace" })} />
 
           <div className="mt-5 mb-1 px-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Projects</span>
-            <button onClick={() => setView({ kind: "new-project" })} className="text-slate-400 hover:text-slate-700" title="New project"><Plus className="h-3.5 w-3.5" /></button>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{t('sidebar.projects')}</span>
+            <button onClick={() => setView({ kind: "new-project" })} className="text-slate-400 hover:text-slate-700" title={t('common.newProject')}><Plus className="h-3.5 w-3.5" /></button>
           </div>
 
           {visibleProjects.length === 0 && (
-            <div className="px-2 py-1.5 text-[11px] italic text-slate-400">Aún no tienes proyectos</div>
+            <div className="px-2 py-1.5 text-[11px] italic text-slate-400">{t('sidebar.noProjects')}</div>
           )}
           {visibleProjects.map((p) => {
             const isOpen = !!expanded[p.id];
@@ -113,11 +116,11 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
         <div ref={profileRef} className="relative border-t border-border p-2">
           {profileOpen && (
             <div className="absolute bottom-full left-2 right-2 mb-2 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-              <MenuItem icon={User} label="Profile" onClick={() => { setView({ kind: "profile" }); setProfileOpen(false); }} />
-              <MenuItem icon={Settings} label="Settings" onClick={() => { setView({ kind: "global-settings", tab: "General" }); setProfileOpen(false); }} />
-              <MenuItem icon={Info} label="Acerca de KOSMO" onClick={() => { setView({ kind: "about" }); setProfileOpen(false); }} />
+              <MenuItem icon={User} label={t('sidebar.profile', 'Profile')} onClick={() => { setView({ kind: "profile" }); setProfileOpen(false); }} />
+              <MenuItem icon={Settings} label={t('sidebar.settings')} onClick={() => { setView({ kind: "global-settings", tab: "General" }); setProfileOpen(false); }} />
+              <MenuItem icon={Info} label={t('sidebar.about', 'Acerca de KOSMO')} onClick={() => { setView({ kind: "about" }); setProfileOpen(false); }} />
               <div className="my-1 h-px bg-slate-100" />
-              <MenuItem icon={LogOut} label="Log out" onClick={() => { setProfileOpen(false); onSignOut(); }} />
+              <MenuItem icon={LogOut} label={t('sidebar.logout', 'Log out')} onClick={() => { setProfileOpen(false); onSignOut(); }} />
             </div>
           )}
           <button
@@ -136,10 +139,49 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
 
       <main className="flex-1 min-w-0 overflow-hidden bg-card flex flex-col">
         <div className="flex items-center justify-end gap-1.5 border-b border-border bg-white/80 backdrop-blur px-4 h-11 shrink-0">
+          <div className="relative">
+            {langOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
+                <div className="absolute top-full right-0 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg z-50">
+                <button
+                  onClick={() => {
+                    i18n.changeLanguage("es");
+                    localStorage.setItem("kosmo_lang", "es");
+                    setLangOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "es" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
+                >
+                  <img src="https://flagcdn.com/w20/es.png" srcSet="https://flagcdn.com/w40/es.png 2x" width="20" alt="ES" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
+                  <span>ES España</span>
+                </button>
+                <button
+                  onClick={() => {
+                    i18n.changeLanguage("en");
+                    localStorage.setItem("kosmo_lang", "en");
+                    setLangOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "en" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
+                >
+                  <img src="https://flagcdn.com/w20/us.png" srcSet="https://flagcdn.com/w40/us.png 2x" width="20" alt="US" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
+                  <span>EN Estados Unidos</span>
+                </button>
+              </div>
+            </>
+          )}
+            <button
+              onClick={() => setLangOpen((v) => !v)}
+              title={i18n.language === "es" ? "Cambiar a Inglés" : "Change to Spanish"}
+              className={`flex items-center justify-center gap-1 h-8 px-2 rounded-md border border-border text-xs shadow-sm transition ${langOpen ? "bg-slate-100 text-slate-900" : "bg-card text-slate-700 hover:bg-slate-50"}`}
+            >
+              <img src={i18n.language === "es" ? "https://flagcdn.com/w20/es.png" : "https://flagcdn.com/w20/us.png"} srcSet={i18n.language === "es" ? "https://flagcdn.com/w40/es.png 2x" : "https://flagcdn.com/w40/us.png 2x"} width="20" alt={i18n.language.toUpperCase()} className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
+              <ChevronDown className="h-3 w-3 text-slate-400" />
+            </button>
+          </div>
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            title={theme === "light" ? "Switch to dark" : "Switch to light"}
+            title={theme === "light" ? t("common.dark_mode") : t("common.light_mode")}
             className="grid h-8 w-8 place-items-center rounded-md text-slate-600 hover:bg-slate-100 transition"
           >
             {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}

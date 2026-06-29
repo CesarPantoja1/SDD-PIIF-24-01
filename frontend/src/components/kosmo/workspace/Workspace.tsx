@@ -31,6 +31,7 @@ import { useApiKeys } from "@/hooks/use-api-keys";
 import { useAgentPrefs, useProjectAgents } from "@/hooks/use-agents";
 import { usePromptTemplate } from "@/hooks/use-prompt-template";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 import { MOCK_VARIANTS } from "@/lib/mock-data";
 import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
@@ -69,6 +70,7 @@ export function buildSequence(specs: SpecRef[]): DocSlot[] {
 
 export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNav, onHome, chatOpen, onToggleChat, onCloseChat, gitOpen, onToggleGit }: { projectId: string; specId: string | null; doc: DocKey; autoStartBrief?: boolean; onNav: (specId: string | null, doc: DocKey) => void; onHome: () => void; chatOpen: boolean; onToggleChat: () => void; onCloseChat: () => void; gitOpen: boolean; onToggleGit: () => void }) {
   const { session } = useAuth();
+  const { t } = useTranslation();
   const token = session?.access_token ?? null;
   const [agents] = useProjectAgents(projectId);
   const project = useProjectById(projectId);
@@ -162,7 +164,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           </h1>
           <button
             onClick={onToggleGit}
-            title="Abrir panel de Git"
+            title={t('workspace.openGit')}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-300 shrink-0"
           >
             <GitBranch className="h-3.5 w-3.5 text-indigo-500" />
@@ -181,12 +183,12 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 <Compass className="h-4 w-4" />
               </div>
               <div className="text-left flex-1 min-w-0">
-                <div className="text-sm font-medium text-indigo-900">Discovery</div>
-                <div className="text-[11px] text-slate-400">Descubrimiento · Brief del producto</div>
+                <div className="text-sm font-medium text-indigo-900">{t('workspace.discovery')}</div>
+                <div className="text-[11px] text-slate-400">{t('workspace.discovery')} · Brief</div>
               </div>
               {discoveryGenerated
-                ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> Generado</Badge>
-                : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> Pendiente</Badge>
+                ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> {t('status.completed')}</Badge>
+                : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> {t('status.pending')}</Badge>
               }
             </button>
           </>
@@ -202,12 +204,12 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
               <Layers className="h-4 w-4" />
             </div>
             <div className="text-left flex-1 min-w-0">
-              <div className="text-sm font-medium text-violet-900">Especificaciones</div>
-              <div className="text-[11px] text-slate-400">Especificaciones del producto</div>
+              <div className="text-sm font-medium text-violet-900">{t('workspace.specs')}</div>
+              <div className="text-[11px] text-slate-400">{t('workspace.specs')}</div>
             </div>
             {specs.length > 0
-              ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> {specs.length} módulos</Badge>
-              : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> Pendiente</Badge>
+              ? <Badge tone="green"><CheckCircle2 className="h-3 w-3 mr-1" /> {specs.length}</Badge>
+              : <Badge tone="slate"><Circle className="h-3 w-3 mr-1" /> {t('status.pending')}</Badge>
             }
           </button>
         )}
@@ -239,8 +241,8 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                       {done ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                     </div>
                     <div className="text-left">
-                      <div className={`text-sm font-medium ${active ? "text-foreground" : "text-slate-600"}`}>{D.label}</div>
-                      <div className="text-[11px] text-slate-400">{D.sub}</div>
+                      <div className={`text-sm font-medium ${active ? "text-foreground" : "text-slate-600"}`}>{t(`workspace.${dk}`, D.label)}</div>
+                      <div className="text-[11px] text-slate-400">{t(`workspace.${dk}_sub`, D.sub)}</div>
                     </div>
                   </button>
                   {i < specStepDocs.length - 1 && (
@@ -316,7 +318,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
           {/* Phase advance bar */}
           <div className="border-t border-border bg-white/80 backdrop-blur px-8 py-3 flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
-              <span className="text-slate-700 font-medium">{DOCS[slot.doc].sub}{slot.specName ? ` · ${slot.specName}` : ""}</span>
+              <span className="text-slate-700 font-medium">{t(`workspace.${slot.doc}_sub`, DOCS[slot.doc].sub)}{slot.specName ? ` · ${slot.specName}` : ""}</span>
             </div>
             <div className="flex items-center gap-2">
               {/* Contextual actions: Chat for Specs */}
@@ -325,23 +327,23 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                   onClick={onToggleChat}
                   className={`inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium transition-colors ${chatOpen ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-card text-slate-600 hover:bg-slate-50 hover:border-slate-300"}`}
                 >
-                  <MessageSquare className="h-3.5 w-3.5" /> Chat IA
+                  <MessageSquare className="h-3.5 w-3.5" /> {t('workspace.chat')}
                 </button>
               )}
               
               {/* Generate / Next buttons */}
               {!generatedLoaded ? (
                 <button disabled className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed">
-                  Cargando estado…
+                  {t('workspace.loadingState')}
                 </button>
               ) : !agents.configured ? (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md font-medium">
                     <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                    Configura agentes globales o locales
+                    {t('workspace.configureAgents')}
                   </div>
                   <button disabled className="inline-flex items-center gap-1.5 rounded-md bg-indigo-300 px-3.5 py-1.5 text-xs font-semibold text-white cursor-not-allowed">
-                    <Sparkles className="h-3.5 w-3.5" /> Generar con IA
+                    <Sparkles className="h-3.5 w-3.5" /> {t('workspace.generateWithAI')}
                   </button>
                 </div>
               ) : isDiscovery ? (
@@ -351,31 +353,31 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                     onClick={() => startGenerate(slot, "generate")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Generar Discovery
+                    <Sparkles className="h-3.5 w-3.5" /> {t('workspace.generateDiscovery')}
                   </button>
                 ) : (
                   <button
                     onClick={() => onNav(null, "specs")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                   >
-                    Ir a Especificaciones <ArrowRight className="h-3.5 w-3.5" />
+                    {t('workspace.goToSpecs')} <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 )
               ) : isSpecsView ? (
                 /* Specs view: Generar specs → Ir al primer módulo */
                 specs.length === 0 ? (
                   <button
-                    onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: "Especificaciones del Producto" })}
+                    onClick={() => setWorking({ specId: null, doc: "brief", mode: "generate-specs", toLabel: t('workspace.productSpecs') })}
                     className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Generar Specs con IA
+                    <Sparkles className="h-3.5 w-3.5" /> {t('workspace.generateSpecsWithAI')}
                   </button>
                 ) : (
                   <button
                     onClick={() => onNav(specs[0].id, "requirements")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                   >
-                    Ir al primer módulo <ArrowRight className="h-3.5 w-3.5" />
+                    {t('workspace.goToFirstModule')} <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 )
               ) : (
@@ -385,17 +387,17 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                     onClick={() => startGenerate(slot, "generate")}
                     className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
                   >
-                    <Sparkles className="h-3.5 w-3.5" /> Generar {DOCS[slot.doc].sub}
+                    <Sparkles className="h-3.5 w-3.5" /> {t('workspace.generate')} {t(`workspace.${slot.doc}_sub`, DOCS[slot.doc].sub)}
                   </button>
                 ) : (
                   <>
-                    <span className="text-xs text-slate-400 italic mr-2">Usa el chat IA para modificaciones</span>
+                    <span className="text-xs text-slate-400 italic mr-2">{t('workspace.useAiChatForMods')}</span>
                     {next && (
                       <button
                         onClick={() => onNav(next.specId, next.doc)}
                         className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
                       >
-                        Siguiente: {DOCS[next.doc].label} <ArrowRight className="h-3.5 w-3.5" />
+                        {t('workspace.nextPhase')} {t(`workspace.${next.doc}`, DOCS[next.doc].label)} <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </>
