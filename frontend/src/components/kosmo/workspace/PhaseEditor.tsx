@@ -115,15 +115,23 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
               } catch {}
             }
             editorRef.current.innerHTML = htmlContent;
-            seedRef.current = htmlContent;
-            setDirty(false);
             setLoadedFromBackend(true);
+            setTimeout(() => {
+              if (editorRef.current) {
+                seedRef.current = editorRef.current.innerHTML;
+                setDirty(false);
+              }
+            }, 0);
           } else if (editorRef.current) {
             // Backend returned no content for this spec/doc, so apply template or keep empty
             const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
             editorRef.current.innerHTML = fallbackHtml;
-            seedRef.current = fallbackHtml;
-            setDirty(false);
+            setTimeout(() => {
+              if (editorRef.current) {
+                seedRef.current = editorRef.current.innerHTML;
+                setDirty(false);
+              }
+            }, 0);
           }
         })
         .catch((err) => {
@@ -131,8 +139,12 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
           if (editorRef.current) {
              const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
              editorRef.current.innerHTML = fallbackHtml;
-             seedRef.current = fallbackHtml;
-             setDirty(false);
+             setTimeout(() => {
+               if (editorRef.current) {
+                 seedRef.current = editorRef.current.innerHTML;
+                 setDirty(false);
+               }
+             }, 0);
           }
         });
       return;
@@ -141,8 +153,12 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
     // 4. No token: show template or empty synchronously
     html = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
     editorRef.current.innerHTML = html;
-    seedRef.current = html;
-    setDirty(false);
+    setTimeout(() => {
+      if (editorRef.current) {
+        seedRef.current = editorRef.current.innerHTML;
+        setDirty(false);
+      }
+    }, 0);
   }, [storageKey, doc, specName, variantIdx, isGenerated, projectId, token, specId]);
 
   const exec = (cmd: string, value?: string) => {
@@ -167,7 +183,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
         { content: html, spec_id: specId || null },
         token
       );
-      seedRef.current = html;
+      seedRef.current = editorRef.current?.innerHTML ?? "";
       setDirty(false);
       setToastMessage("Guardado exitosamente");
       setShowToast(true);
@@ -175,7 +191,7 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
     } catch (err) {
       console.error("Error guardando documento:", err);
       // Fallback a solo local si falla
-      seedRef.current = html;
+      seedRef.current = editorRef.current?.innerHTML ?? "";
       setDirty(false);
     } finally {
       setIsSaving(false);
@@ -310,7 +326,12 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
           contentEditable={isContentReady}
           suppressContentEditableWarning
           onInput={onInput}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            setFocused(true);
+            if (!dirty && editorRef.current) {
+              seedRef.current = editorRef.current.innerHTML;
+            }
+          }}
           onBlur={() => setFocused(false)}
           className={`prose-kosmo max-w-none px-8 py-7 flex-1 min-h-0 overflow-y-auto kosmo-scroll focus:outline-none ${focused ? "ring-1 ring-indigo-200/60 ring-inset" : ""}`}
         />

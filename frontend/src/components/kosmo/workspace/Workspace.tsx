@@ -284,7 +284,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
               ) : slot.doc === "design" ? (
                 <ApollonDesignEditor
                   projectId={projectId}
-                  scopeKey={currentKey}
+                  specId={slot.specId}
                   specName={slot.specName}
                   chatOpen={chatOpen}
                   onToggleChat={onToggleChat}
