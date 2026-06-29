@@ -228,7 +228,7 @@ export function ApollonDesignEditor({
       <div className="flex items-center justify-between border-b border-border px-5 py-3 shrink-0">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-emerald-600" />
-          <span className="text-sm font-semibold text-slate-800">Diagrama de Clases</span>
+          <span className="text-sm font-semibold text-slate-800">{t('workspace.diagram')}</span>
           {specName && <span className="text-[11px] text-slate-400">· {specName}</span>}
           {dirty && <div className="h-2.5 w-2.5 rounded-full bg-amber-500 flex-shrink-0" title="Cambios sin guardar" />}
         </div>

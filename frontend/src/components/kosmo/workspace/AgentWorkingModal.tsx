@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, Eye, Sparkles, CheckCircle2, Loader2, X, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/kosmo/common";
 import { streamDiscovery, type Evaluation } from "@/lib/api/api";
+import { useTranslation } from "react-i18next";
 
 /* ── Data model ── */
 
@@ -109,6 +110,7 @@ export function AgentWorkingModal({
   sseDocKey?: string;
   sseSpecId?: string | null;
 }) {
+  const { t } = useTranslation();
   const useSSE = !!(sseToken && sseProjectId && sseProvider && sseModel
     && (mode === "generate" || mode === "generate-specs"));
   const isDiscoverySSE = useSSE;
@@ -143,7 +145,7 @@ export function AgentWorkingModal({
   const mockFinished = mockStep >= totalMockSteps;
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const verb = mode === "regenerate" ? "Regenerando" : "Generando";
+  const verb = mode === "regenerate" ? t('workspace.regenerating') : t('workspace.generating');
   const finished = isDiscoverySSE ? sseFinished : mockFinished;
   const iterationsCount = isDiscoverySSE ? sseEvaluations.length : mockIterations.length;
 
@@ -354,7 +356,7 @@ export function AgentWorkingModal({
                   <div key={iter.iteration}>
                     <div className="flex items-center gap-2 pt-3 pb-2">
                       <div className="h-px flex-1 bg-slate-200" />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Iteración {iter.iteration}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{t('workspace.iteration')} {iter.iteration}</span>
                       <div className="h-px flex-1 bg-slate-200" />
                     </div>
 
@@ -364,7 +366,7 @@ export function AgentWorkingModal({
                           <Bot className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 mb-0.5">Creador</div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 mb-0.5">{t('workspace.creator')}</div>
                           <div className="inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border bg-card border-border text-slate-700">{iter.creator}</div>
                         </div>
                       </div>
@@ -376,7 +378,7 @@ export function AgentWorkingModal({
                           <Eye className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">Revisor</div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-0.5">{t('workspace.reviewer')}</div>
                           <div className={`inline-block rounded-lg px-3 py-2 text-xs leading-relaxed shadow-sm border ${
                             iter.passed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-amber-50 border-amber-200 text-amber-900"
                           }`}>
@@ -384,7 +386,7 @@ export function AgentWorkingModal({
                               <span>{iter.reviewer}</span>
                               <Badge tone={iter.passed ? "green" : "amber"}>
                                 {iter.passed ? <CheckCircle2 className="h-3 w-3 mr-0.5" /> : <AlertTriangle className="h-3 w-3 mr-0.5" />}
-                                {iter.approved}/{iter.total} criterios
+                                {iter.approved}/{iter.total} {t('workspace.criteria')}
                               </Badge>
                             </div>
                             {iter.issues && iter.issues.length > 0 && (
@@ -412,7 +414,7 @@ export function AgentWorkingModal({
                     <TypingDot delay={150} />
                     <TypingDot delay={300} />
                   </span>
-                  {mockStep % 2 === 0 ? "Creador escribiendo…" : "Revisor analizando…"}
+                  {mockStep % 2 === 0 ? t('workspace.creatorTyping') : t('workspace.reviewerAnalyzing')}
                 </div>
               )}
             </>
@@ -424,23 +426,23 @@ export function AgentWorkingModal({
           <p className="text-[11px] text-muted-foreground">
             {finished
               ? sseError
-                ? "Ocurrió un error. Intenta de nuevo."
-                : `Completado en ${iterationsCount} ${iterationsCount === 1 ? "iteración" : "iteraciones"}. ${lastApproved}/${lastTotal} criterios aprobados.`
-              : "Puedes cancelar en cualquier momento."}
+                ? t('workspace.errorRetry')
+                : t('workspace.completedIn', { count: iterationsCount }) + `. ` + t('workspace.criteriaApproved', { approved: lastApproved, total: lastTotal })
+              : t('workspace.canCancel')}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={onCancel}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              <X className="h-3.5 w-3.5" /> Cancelar
+              <X className="h-3.5 w-3.5" /> {t('workspace.cancel')}
             </button>
             <button
               onClick={() => onDone(isDiscoverySSE ? (sseContent ?? undefined) : undefined)}
               disabled={!finished}
               className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check className="h-3.5 w-3.5" /> Revisar propuesta
+              <Check className="h-3.5 w-3.5" /> {t('workspace.reviewProposal')}
             </button>
           </div>
         </div>
