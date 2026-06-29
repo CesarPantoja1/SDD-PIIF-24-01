@@ -147,7 +147,18 @@ async def generate_discovery_stream(
             else:
                 yield f"event: complete\ndata: {json.dumps({'content': result.get('content', '')})}\n\n"
         except Exception as exc:
-            yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+            exc_str = str(exc).lower()
+            err_dict = {"code": "unknown_error", "status": 500, "message": str(exc)}
+            if "402" in exc_str or "insufficient_quota" in exc_str or "insufficient balance" in exc_str:
+                err_dict = {"code": "insufficient_balance", "status": 402, "message": "Insufficient Balance"}
+            elif "401" in exc_str or "unauthorized" in exc_str or "invalid_api_key" in exc_str or "invalid api key" in exc_str:
+                err_dict = {"code": "invalid_key", "status": 401, "message": "Invalid API Key"}
+            elif "429" in exc_str or "rate limit" in exc_str or "rate_limit" in exc_str:
+                err_dict = {"code": "rate_limit", "status": 429, "message": "Rate Limit Exceeded"}
+            elif "503" in exc_str or "502" in exc_str or "network" in exc_str or "connect" in exc_str or "timeout" in exc_str:
+                err_dict = {"code": "network_error", "status": 503, "message": "Network Error"}
+                
+            yield f"event: error\ndata: {json.dumps({'error': err_dict})}\n\n"
         finally:
             executor.shutdown(wait=False)
 

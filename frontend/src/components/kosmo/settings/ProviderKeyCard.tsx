@@ -3,6 +3,7 @@ import { Cpu, Trash2, RefreshCw, CheckCircle2, XCircle, ExternalLink, Copy, Copy
 import type { ProviderKey } from "@/lib/types";
 import { PROVIDERS } from "@/lib/constants";
 import { Badge } from "@/components/kosmo/common";
+import { useTranslation } from "react-i18next";
 
 type TestResult = { ok: boolean; error?: string | null };
 
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, onReveal }: Props) {
+  const { t } = useTranslation();
   const info = PROVIDERS[provider];
   const hasSavedKey = !!savedKey?.trim();
 
@@ -50,7 +52,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
       setMode("view");
       setTestResult(null);
     } catch (err: any) {
-      setTestResult({ ok: false, error: err?.message ?? "Error al guardar" });
+      setTestResult({ ok: false, error: err?.message ?? t("globalSettings.errorSave", "Error al guardar") });
     } finally {
       setSaving(false);
     }
@@ -68,7 +70,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
       const result = await onTest(key);
       setTestResult(result);
     } catch (err: any) {
-      setTestResult({ ok: false, error: err?.message ?? "Error al probar conexión" });
+      setTestResult({ ok: false, error: err?.message ?? t("globalSettings.errorTest", "Error al probar conexión") });
     } finally {
       setTesting(false);
     }
@@ -82,7 +84,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
       setMode("view");
       setTestResult(null);
     } catch (err: any) {
-      setTestResult({ ok: false, error: err?.message ?? "Error al eliminar" });
+      setTestResult({ ok: false, error: err?.message ?? t("globalSettings.errorDelete", "Error al eliminar") });
     } finally {
       setDeleting(false);
     }
@@ -138,13 +140,13 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
           <span className="text-sm font-semibold">{info.label}</span>
         </div>
         {hasSavedKey && !testResult?.ok ? (
-          <Badge tone="green">Guardada</Badge>
+          <Badge tone="green">{t("globalSettings.saved", "Guardada")}</Badge>
         ) : testResult?.ok ? (
-          <Badge tone="green">Key válida</Badge>
+          <Badge tone="green">{t("globalSettings.keyValid", "Key válida")}</Badge>
         ) : testResult && !testResult.ok ? (
-          <Badge tone="red">Key no válida</Badge>
+          <Badge tone="red">{t("globalSettings.keyInvalid", "Key no válida")}</Badge>
         ) : (
-          <Badge tone="slate">Sin configurar</Badge>
+          <Badge tone="slate">{t("globalSettings.unconfigured", "Sin configurar")}</Badge>
         )}
       </div>
 
@@ -158,7 +160,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
             <button
               onClick={handleCopy}
               className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
-              title="Copiar al portapapeles"
+              title={t("globalSettings.copyClipboard", "Copiar al portapapeles")}
             >
               {copied ? <CopyCheck className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </button>
@@ -182,7 +184,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
             <button
               onClick={handleCopy}
               className="grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-slate-50 text-slate-500"
-              title="Copiar al portapapeles"
+              title={t("globalSettings.copyClipboard", "Copiar al portapapeles")}
             >
               {copied ? <CopyCheck className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </button>
@@ -192,7 +194,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
 
       {/* Format hint */}
       <p className="text-[11px] text-slate-400 mb-2">
-        Formato esperado: <code className="text-slate-500">{info.keyPrefix}...</code>
+        {t("globalSettings.expectedFormat", "Formato esperado:")} <code className="text-slate-500">{info.keyPrefix}...</code>
       </p>
 
       {/* Test result */}
@@ -200,7 +202,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
         <div className={`mb-3 rounded-md p-3 text-sm flex items-start gap-2 ${testResult.ok ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "border border-red-200 bg-red-50 text-red-700"}`}>
           {testResult.ok ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" /> : <XCircle className="h-4 w-4 shrink-0 mt-0.5" />}
           <div className="min-w-0">
-            <p className="font-medium">{testResult.ok ? "Conexión exitosa" : "Error de conexión"}</p>
+            <p className="font-medium">{testResult.ok ? t("globalSettings.connSuccess", "Conexión exitosa") : t("globalSettings.connError", "Error de conexión")}</p>
             {testResult.error && <p className="text-xs mt-0.5 break-words">{testResult.error}</p>}
           </div>
           <button onClick={() => setTestResult(null)} className="shrink-0 opacity-60 hover:opacity-100">
@@ -216,7 +218,7 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 mb-3"
       >
-        Obtener key <ExternalLink className="h-3 w-3" />
+        {t("globalSettings.getKey", "Obtener key")} <ExternalLink className="h-3 w-3" />
       </a>
 
       {/* Actions */}
@@ -229,12 +231,12 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
           {testing ? (
             <>
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-              Verificando...
+              {t("globalSettings.verifying", "Verificando...")}
             </>
           ) : (
             <>
               <RefreshCw className="h-3.5 w-3.5" />
-              Probar conexión
+              {t("globalSettings.testConn", "Probar conexión")}
             </>
           )}
         </button>
@@ -245,21 +247,21 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
               onClick={() => { setMode("edit"); setTestResult(null); hideRevealed(); }}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
-              Reemplazar
+              {t("globalSettings.replace", "Reemplazar")}
             </button>
             <button
               onClick={handleReveal}
               disabled={revealing}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
             >
-              {revealing ? "..." : revealedKey ? "Ocultar" : "Revelar"}
+              {revealing ? "..." : revealedKey ? t("globalSettings.hide", "Ocultar") : t("globalSettings.reveal", "Revelar")}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="inline-flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Eliminar
+              {t("common.delete", "Eliminar")}
             </button>
           </>
         ) : (
@@ -269,14 +271,14 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
               disabled={!canSave || saving}
               className="rounded-md bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
             >
-              {saving ? "Guardando..." : "Guardar"}
+              {saving ? t("common.saving", "Guardando...") : t("common.save", "Guardar")}
             </button>
             {mode === "edit" && (
               <button
                 onClick={() => { setMode("view"); setDraft(savedKey); setTestResult(null); }}
                 className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
               >
-                Cancelar
+                {t("common.cancel", "Cancelar")}
               </button>
             )}
           </>
@@ -288,10 +290,10 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
         <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 flex items-start gap-2">
           <div className="flex-1">
             <p className="text-xs font-medium text-red-700">
-              ¿Eliminar API Key de {info.label}?
+              {t("globalSettings.deleteKeyPrompt", "¿Eliminar API Key de {{label}}?", { label: info.label })}
             </p>
             <p className="text-[11px] text-red-600 mt-0.5">
-              Los agentes configurados con este proveedor dejarán de funcionar hasta que agregues una nueva key.
+              {t("globalSettings.deleteKeyWarning", "Los agentes configurados con este proveedor dejarán de funcionar hasta que agregues una nueva key.")}
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -299,14 +301,14 @@ export function ProviderKeyCard({ provider, savedKey, onSave, onDelete, onTest, 
               onClick={() => setShowDeleteConfirm(false)}
               className="rounded-md border border-red-200 px-2.5 py-1 text-[11px] font-medium text-red-600 hover:bg-red-100"
             >
-              Cancelar
+              {t("common.cancel", "Cancelar")}
             </button>
             <button
               onClick={handleDelete}
               disabled={deleting}
               className="rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-red-700 disabled:opacity-40"
             >
-              {deleting ? "..." : "Eliminar"}
+              {deleting ? "..." : t("common.delete", "Eliminar")}
             </button>
           </div>
         </div>

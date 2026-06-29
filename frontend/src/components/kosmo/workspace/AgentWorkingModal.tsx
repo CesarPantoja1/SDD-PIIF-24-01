@@ -224,16 +224,16 @@ export function AgentWorkingModal({
       <div className="w-full max-w-lg rounded-2xl bg-card shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ── Header ── */}
         <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-indigo-50 text-indigo-600">
-            {finished ? <CheckCircle2 className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+          <div className={`grid h-9 w-9 place-items-center rounded-md ${sseError ? "bg-red-50 text-red-600" : "bg-indigo-50 text-indigo-600"}`}>
+            {sseError ? <AlertTriangle className="h-4 w-4" /> : finished ? <CheckCircle2 className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-slate-800 tracking-tight">
-              {finished ? (sseError ? "Error" : "Propuesta lista") : `${verb}…`}
+              {sseError ? t('workspace.errorGeneric', 'Error de Generación') : finished ? "Propuesta lista" : `${verb}…`}
             </h3>
             <p className="text-xs text-muted-foreground truncate">{toLabel}</p>
           </div>
-          {!finished && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
+          {!finished && !sseError && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
         </div>
 
         {/* ── Body ── */}
@@ -312,7 +312,7 @@ export function AgentWorkingModal({
                 );
               })}
 
-              {!sseFinished && (
+              {!sseFinished && !sseError && (
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground pl-1 pt-2">
                   <span className="inline-flex gap-0.5">
                     <TypingDot delay={0} />
@@ -323,11 +323,7 @@ export function AgentWorkingModal({
                 </div>
               )}
 
-              {sseError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 mt-2 text-xs text-red-700">
-                  {sseError}
-                </div>
-              )}
+
             </>
           ) : mode === "generate" && sseToken && sseProjectId ? (
             /* ── Error: Discovery should use SSE but provider/model missing ── */
@@ -407,7 +403,7 @@ export function AgentWorkingModal({
                 );
               })}
 
-              {!mockFinished && (
+              {!mockFinished && !sseError && (
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground pl-1 pt-2">
                   <span className="inline-flex gap-0.5">
                     <TypingDot delay={0} />
@@ -418,6 +414,23 @@ export function AgentWorkingModal({
                 </div>
               )}
             </>
+          )}
+
+          {sseError && (
+            <div className="mt-4 p-3 rounded-md bg-red-50 border border-red-200 flex items-start gap-2 text-sm text-red-900 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium text-red-800 mb-1">{t('workspace.errorGeneric', 'Ha ocurrido un error')}</p>
+                <p className="text-red-700 leading-relaxed text-xs">
+                  {sseError.code === "insufficient_balance" && t('workspace.errorInsufficientBalance')}
+                  {sseError.code === "invalid_key" && t('workspace.errorInvalidKey')}
+                  {sseError.code === "rate_limit" && t('workspace.errorRateLimit')}
+                  {sseError.code === "network_error" && t('workspace.errorNetwork')}
+                  {sseError.code === "unknown_error" && (sseError.message || t('workspace.errorGeneric'))}
+                  {!sseError.code && (typeof sseError === "string" ? sseError : JSON.stringify(sseError))}
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
@@ -435,15 +448,17 @@ export function AgentWorkingModal({
               onClick={onCancel}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              <X className="h-3.5 w-3.5" /> {t('workspace.cancel')}
+              {sseError ? t('workspace.close', 'Close') : <><X className="h-3.5 w-3.5" /> {t('workspace.cancel')}</>}
             </button>
-            <button
-              onClick={() => onDone(isDiscoverySSE ? (sseContent ?? undefined) : undefined)}
-              disabled={!finished}
-              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className="h-3.5 w-3.5" /> {t('workspace.reviewProposal')}
-            </button>
+            {!sseError && (
+              <button
+                onClick={() => onDone(isDiscoverySSE ? (sseContent ?? undefined) : undefined)}
+                disabled={!finished}
+                className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="h-3.5 w-3.5" /> {t('workspace.reviewProposal')}
+              </button>
+            )}
           </div>
         </div>
       </div>

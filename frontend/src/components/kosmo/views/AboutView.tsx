@@ -2,8 +2,10 @@ import {
   Sparkles, Github, Heart, GraduationCap, Scale, FileText, Layers, Bot,
   ShieldCheck, Mail, ExternalLink, Code2, Wand2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function AboutView() {
+  const { t } = useTranslation();
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-b from-slate-50 to-white">
       <div className="w-full px-8 lg:px-12 py-10">
@@ -23,24 +25,23 @@ export function AboutView() {
               <Sparkles className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">Acerca de</div>
+              <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">{t("about.label", "Acerca de")}</div>
               <h1 className="mt-1 text-4xl font-semibold tracking-tight">KOSMO</h1>
               <p className="mt-3 text-base text-white/85 max-w-2xl">
-                Plataforma de Spec-Driven Development y Vibe Modeling que orquesta
-                agentes IA para llevar tus ideas desde el descubrimiento hasta el código.
+                {t("about.desc", "Plataforma de Spec-Driven Development y Vibe Modeling que orquesta agentes IA para llevar tus ideas desde el descubrimiento hasta el código.")}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/15 backdrop-blur border border-white/20 px-2.5 py-1 text-[11px] font-medium">
-                  v1.0.0 · Prototipo
+                  {t("about.version", "v1.0.0 · Prototipo")}
                 </span>
                 <span className="rounded-full bg-white/15 backdrop-blur border border-white/20 px-2.5 py-1 text-[11px] font-medium">
-                  Licencia MIT
+                  {t("about.license", "Licencia MIT")}
                 </span>
                 <span className="rounded-full bg-white/15 backdrop-blur border border-white/20 px-2.5 py-1 text-[11px] font-medium">
-                  Proyecto académico
+                  {t("about.academic", "Proyecto académico")}
                 </span>
                 <span className="rounded-full bg-white/15 backdrop-blur border border-white/20 px-2.5 py-1 text-[11px] font-medium">
-                  SDD + Vibe Modeling
+                  {t("about.sddVibe", "SDD + Vibe Modeling")}
                 </span>
               </div>
             </div>
@@ -53,15 +54,13 @@ export function AboutView() {
           <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-2 text-indigo-700">
               <GraduationCap className="h-4 w-4" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase">Universidad</h2>
+              <h2 className="text-sm font-semibold tracking-wide uppercase">{t("about.university", "Universidad")}</h2>
             </div>
             <div className="mt-3">
-              <div className="text-lg font-semibold tracking-tight">Escuela Politécnica Nacional</div>
-              <div className="text-sm text-muted-foreground">EPN · Quito, Ecuador</div>
+              <div className="text-lg font-semibold tracking-tight">{t("about.universityName", "Escuela Politécnica Nacional")}</div>
+              <div className="text-sm text-muted-foreground">{t("about.universityShort", "EPN · Quito, Ecuador")}</div>
               <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-                Proyecto desarrollado en el marco de la Facultad de Ingeniería en
-                Sistemas como exploración aplicada de metodologías SDD, Vibe Modeling
-                y agentes de IA generativa.
+                {t("about.universityDesc", "Proyecto desarrollado en el marco de la Facultad de Ingeniería en Sistemas como exploración aplicada de metodologías SDD, Vibe Modeling y agentes de IA generativa.")}
               </p>
               <a
                 href="https://www.epn.edu.ec"
@@ -78,12 +77,10 @@ export function AboutView() {
           <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="flex items-center gap-2 text-indigo-700">
               <Scale className="h-4 w-4" />
-              <h2 className="text-sm font-semibold tracking-wide uppercase">Licencia MIT</h2>
+              <h2 className="text-sm font-semibold tracking-wide uppercase">{t("about.licenseTitle", "Licencia MIT")}</h2>
             </div>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-              KOSMO se distribuye bajo licencia MIT. Eres libre de usar, copiar,
-              modificar, fusionar, publicar, distribuir y sublicenciar el código,
-              siempre que se conserve el aviso de copyright.
+              {t("about.licenseDesc", "KOSMO se distribuye bajo licencia MIT. Eres libre de usar, copiar, modificar, fusionar, publicar, distribuir y sublicenciar el código, siempre que se conserve el aviso de copyright.")}
             </p>
             <pre className="mt-3 rounded-md border border-border bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600 font-mono whitespace-pre-wrap">
 {`MIT License
@@ -102,18 +99,18 @@ restriction…`}
         <section className="mt-4 rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 text-indigo-700">
             <Code2 className="h-4 w-4" />
-            <h2 className="text-sm font-semibold tracking-wide uppercase">Stack tecnológico</h2>
+            <h2 className="text-sm font-semibold tracking-wide uppercase">{t("about.techStack", "Stack tecnológico")}</h2>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[
               { k: "Frontend", v: "React 19 · TanStack Start · Tailwind v4" },
               { k: "Backend", v: "FastAPI (Python) · Pydantic" },
-              { k: "Base de datos", v: "Supabase · PostgreSQL · RLS" },
+              { k: t("about.database", "Base de datos"), v: "Supabase · PostgreSQL · RLS" },
               { k: "Auth", v: "Supabase Auth (email + password)" },
-              { k: "IA", v: "Multi-proveedor: OpenAI, Anthropic, Google, DeepSeek" },
-              { k: "Diseño UML", v: "Apollon Editor" },
-              { k: "Iconografía", v: "Lucide React" },
-              { k: "Deploy", v: "Edge · Cloudflare Workers" },
+              { k: t("about.ai", "IA"), v: "Multi-proveedor: OpenAI, Anthropic, Google, DeepSeek" },
+              { k: t("about.umlDesign", "Diseño UML"), v: "Apollon Editor" },
+              { k: t("about.iconography", "Iconografía"), v: "Lucide React" },
+              { k: t("about.deploy", "Deploy"), v: "Edge · Cloudflare Workers" },
             ].map((s) => (
               <div key={s.k} className="rounded-lg border border-border bg-slate-50/60 px-3 py-2.5">
                 <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{s.k}</div>
@@ -126,11 +123,11 @@ restriction…`}
         {/* Features mini-grid */}
         <section className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[
-            { icon: FileText, k: "Specs vivas", d: "Brief → Requirements → Tasks." },
-            { icon: Layers, k: "Diseño UML", d: "Editor de diagramas integrado." },
-            { icon: Bot, k: "Agentes por etapa", d: "Creador y revisor configurables." },
-            { icon: Wand2, k: "Vibe Modeling", d: "Itera diseño y código por intención." },
-            { icon: ShieldCheck, k: "Bring your own key", d: "Tus credenciales, tu control." },
+            { icon: FileText, k: t("about.featLiveSpecs", "Specs vivas"), d: t("about.featLiveSpecsDesc", "Brief → Requirements → Tasks.") },
+            { icon: Layers, k: t("about.featUml", "Diseño UML"), d: t("about.featUmlDesc", "Editor de diagramas integrado.") },
+            { icon: Bot, k: t("about.featAgents", "Agentes por etapa"), d: t("about.featAgentsDesc", "Creador y revisor configurables.") },
+            { icon: Wand2, k: t("about.featVibe", "Vibe Modeling"), d: t("about.featVibeDesc", "Itera diseño y código por intención.") },
+            { icon: ShieldCheck, k: t("about.featByok", "Bring your own key"), d: t("about.featByokDesc", "Tus credenciales, tu control.") },
           ].map((f) => (
             <div key={f.k} className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -146,13 +143,12 @@ restriction…`}
         <section className="mt-4 rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 text-indigo-700">
             <Heart className="h-4 w-4" />
-            <h2 className="text-sm font-semibold tracking-wide uppercase">Créditos</h2>
+            <h2 className="text-sm font-semibold tracking-wide uppercase">{t("about.credits", "Créditos")}</h2>
           </div>
           <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-            Diseño, ingeniería y especificación de KOSMO por el equipo de
-            estudiantes e investigadores de la <strong>Escuela Politécnica Nacional</strong>.
-            Gracias al cuerpo docente que acompañó el proceso de exploración del
-            paradigma SDD y la práctica de Vibe Modeling.
+            {t("about.creditsDesc", "Diseño, ingeniería y especificación de KOSMO por el equipo de estudiantes e investigadores de la")}{" "}
+            <strong>{t("about.creditsEpn", "Escuela Politécnica Nacional")}</strong>.{" "}
+            {t("about.creditsThanks", "Gracias al cuerpo docente que acompañó el proceso de exploración del paradigma SDD y la práctica de Vibe Modeling.")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <a
@@ -161,19 +157,19 @@ restriction…`}
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              <Github className="h-3.5 w-3.5" /> Repositorio
+              <Github className="h-3.5 w-3.5" /> {t("about.repository", "Repositorio")}
             </a>
             <a
               href="mailto:kosmo@epn.edu.ec"
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
-              <Mail className="h-3.5 w-3.5" /> Contacto
+              <Mail className="h-3.5 w-3.5" /> {t("about.contact", "Contacto")}
             </a>
           </div>
         </section>
 
         <p className="mt-8 text-center text-[11px] text-muted-foreground">
-          Hecho en Quito · © {new Date().getFullYear()} KOSMO
+          {t("about.madeIn", "Hecho en Quito · © {{year}} KOSMO", { year: new Date().getFullYear() })}
         </p>
       </div>
     </div>

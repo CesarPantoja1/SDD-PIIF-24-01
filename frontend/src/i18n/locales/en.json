@@ -97,12 +97,32 @@
     "criteriaApproved": "{{approved}}/{{total}} criteria approved.",
     "canCancel": "You can cancel at any time.",
     "cancel": "Cancel",
-    "reviewProposal": "Review proposal"
+    "reviewProposal": "Review proposal",
+    "errorInsufficientBalance": "You don't have enough balance on the API Key for this model.",
+    "errorRateLimit": "You have exceeded the rate limit for your provider.",
+    "errorInvalidKey": "The provided API Key is invalid or lacks permissions.",
+    "errorNetwork": "There was a network error while connecting to the provider.",
+    "errorGeneric": "An unexpected error occurred during generation.",
+    "close": "Close"
   },
   "status": {
     "pending": "Pending",
     "in_progress": "In progress",
     "completed": "Completed",
     "failed": "Failed"
+  },
+  "sidebar": {
+    "home": "Home",
+    "myWorkspace": "My Workspace",
+    "projects": "PROJECTS",
+    "noProjects": "No projects yet.",
+    "profile": "Profile",
+    "settings": "Settings",
+    "about": "About KOSMO",
+    "logout": "Log out",
+    "defaultUser": "User"
+  },
+  "settings": {
+    "proPlan": "Pro Workspace"
   }
 }

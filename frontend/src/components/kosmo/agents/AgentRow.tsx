@@ -34,6 +34,7 @@ import {
   useDeletedProjects, useGenerated, useProjectDisplayName,
   useProjectSpecs, useVisibleProjects,
 } from "@/hooks/use-project";
+import { useTranslation } from "react-i18next";
 
 import {
   Card, CardHeader, Badge, Stat, KpiCard, Donut, fmtTokens, MissingKeyHint,
@@ -43,7 +44,7 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
-function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey, t: any) {
   const all = Object.keys(PROVIDERS) as ProviderKey[];
   const withKeys = all.filter((k) => !!keys[k]?.trim());
   const currentHasKey = !!keys[currentProvider]?.trim();
@@ -57,7 +58,7 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
     seen.add(currentProvider);
     options.push(
       <option key={currentProvider} value={currentProvider} disabled>
-        {PROVIDERS[currentProvider].label} (sin API Key)
+        {PROVIDERS[currentProvider].label} ({t("globalSettings.missingKey", "sin API Key")})
       </option>,
     );
   }
@@ -65,7 +66,7 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
   for (const k of all) {
     if (!seen.has(k)) {
       options.push(
-        <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>,
+        <option key={k} value={k} disabled>{PROVIDERS[k].label} ({t("globalSettings.missingKey", "sin API Key")})</option>,
       );
     }
   }
@@ -74,6 +75,7 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
 }
 
 export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onEditPrompt }: { label: string; desc: string; spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void; onEditPrompt?: () => void }) {
+  const { t } = useTranslation();
   const hasKey = !!keys[spec.provider]?.trim();
   const models = PROVIDERS[spec.provider].models;
   return (
@@ -87,34 +89,30 @@ export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onE
         {onEditPrompt && (
           <button
             onClick={onEditPrompt}
-            title="Editar prompt del agente"
+            title={t("globalSettings.editPrompt", "Editar prompt del agente")}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
           >
-            <FileCode2 className="h-3 w-3" /> Prompt
+            <FileCode2 className="h-3 w-3" /> {t("globalSettings.prompt", "Prompt")}
           </button>
         )}
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <div>
-          <label className="text-[11px] font-medium text-muted-foreground">Proveedor</label>
+          <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.provider", "Proveedor")}</label>
           <select
             value={spec.provider}
-            onChange={(e) => {
-              const p = e.target.value as ProviderKey;
-              onChange({ provider: p, model: PROVIDERS[p].models[0] });
-            }}
-            className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
+            onChange={(e) => onChange({ provider: e.target.value as ProviderKey })}
+            className="mt-1 w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            {buildProviderOptions(keys, spec.provider)}
+            {buildProviderOptions(keys, spec.provider, t)}
           </select>
         </div>
         <div>
-          <label className="text-[11px] font-medium text-muted-foreground">Modelo</label>
+          <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.model", "Modelo")}</label>
           <select
             value={spec.model}
             onChange={(e) => onChange({ model: e.target.value })}
-            disabled={!hasKey}
-            className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm disabled:opacity-60"
+            className="mt-1 w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>

@@ -122,21 +122,14 @@ export function fmtTokens(n: number) {
 }
 
 export function MissingKeyHint({ provider, onOpenApiKeys }: { provider: ProviderKey; onOpenApiKeys?: () => void }) {
+  const { t } = useTranslation();
   return (
-    <div className="mt-2 text-[11px] text-amber-600 flex items-center gap-1 flex-wrap">
-      <AlertTriangle className="h-3 w-3" />
-      Falta API Key para {PROVIDERS[provider].label}. Agrégala en Workspace Settings →{" "}
-      {onOpenApiKeys ? (
-        <button
-          onClick={onOpenApiKeys}
-          className="underline underline-offset-2 font-medium text-amber-700 hover:text-amber-800"
-        >
-          API Keys
-        </button>
-      ) : (
-        <span className="underline">API Keys</span>
+    <div className="mt-3 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50/70 px-2.5 py-1.5">
+      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+      <span className="flex-1 text-[11px] text-amber-800">{t("globalSettings.missingKeyAlert", "Falta API Key de {{provider}}", { provider: PROVIDERS[provider].label })}</span>
+      {onOpenApiKeys && (
+        <button onClick={onOpenApiKeys} className="text-[11px] font-medium text-indigo-600 hover:text-indigo-700">{t("globalSettings.add", "Agregar")}</button>
       )}
-      .
     </div>
   );
 }
@@ -334,7 +327,7 @@ export function Dot({ delay = "0ms" }: { delay?: string }) {
 }
 
 /* ============== PRIMITIVES ============== */
-export function InnerSidebar({ title, tabs, active, onSelect }: { title: string; tabs: string[]; active: string; onSelect: (t: string) => void }) {
+export function InnerSidebar({ title, tabs, active, onSelect, tabLabels }: { title: string; tabs: string[]; active: string; onSelect: (t: string) => void; tabLabels?: Record<string, string> }) {
   return (
     <div className="w-60 shrink-0 border-r border-border bg-slate-50 px-3 py-6">
       <div className="px-2 mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</div>
@@ -346,7 +339,7 @@ export function InnerSidebar({ title, tabs, active, onSelect }: { title: string;
             className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm ${active === t ? "bg-card text-indigo-700 font-medium shadow-sm border border-border" : "text-slate-600 hover:bg-white"}`}
           >
             {iconFor(t)}
-            <span>{t}</span>
+            <span>{tabLabels?.[t] ?? t}</span>
           </button>
         ))}
       </nav>

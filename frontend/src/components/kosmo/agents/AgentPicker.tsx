@@ -42,8 +42,9 @@ import {
   PlaceholderCard, StatusBadge, inputCls, SidebarProjectRow, SidebarItem,
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
+import { useTranslation } from "react-i18next";
 
-function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey, t: any) {
   const all = Object.keys(PROVIDERS) as ProviderKey[];
   const withKeys = all.filter((k) => !!keys[k]?.trim());
   const currentHasKey = !!keys[currentProvider]?.trim();
@@ -60,7 +61,7 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
     seen.add(currentProvider);
     options.push(
       <option key={currentProvider} value={currentProvider} disabled>
-        {PROVIDERS[currentProvider].label} (sin API Key)
+        {PROVIDERS[currentProvider].label} ({t("globalSettings.missingKey", "sin API Key")})
       </option>,
     );
   }
@@ -69,7 +70,7 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey) {
   for (const k of all) {
     if (!seen.has(k)) {
       options.push(
-        <option key={k} value={k} disabled>{PROVIDERS[k].label} (sin API Key)</option>,
+        <option key={k} value={k} disabled>{PROVIDERS[k].label} ({t("globalSettings.missingKey", "sin API Key")})</option>,
       );
     }
   }
@@ -83,23 +84,24 @@ export function AgentPicker({ spec, keys, onChange, onOpenApiKeys }: { spec: Age
 
 
 export function AgentPickerInner({ spec, keys, onChange, onOpenApiKeys, hideMissingKey }: { spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void; hideMissingKey?: boolean }) {
+  const { t } = useTranslation();
   const hasKey = !!keys[spec.provider]?.trim();
   const models = PROVIDERS[spec.provider].models;
   return (
     <div>
       <div className="grid gap-3 md:grid-cols-2">
         <div>
-          <label className="text-[11px] font-medium text-muted-foreground">Proveedor</label>
+          <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.provider", "Proveedor")}</label>
           <select
             value={spec.provider}
             onChange={(e) => { const p = e.target.value as ProviderKey; onChange({ provider: p, model: PROVIDERS[p].models[0] }); }}
             className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
-            {buildProviderOptions(keys, spec.provider)}
+            {buildProviderOptions(keys, spec.provider, t)}
           </select>
         </div>
         <div>
-          <label className="text-[11px] font-medium text-muted-foreground">Modelo</label>
+          <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.model", "Modelo")}</label>
           <select
             value={spec.model}
             onChange={(e) => onChange({ model: e.target.value })}

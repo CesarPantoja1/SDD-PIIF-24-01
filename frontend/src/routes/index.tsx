@@ -129,8 +129,8 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
           >
             <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-semibold text-white">{initials}</div>
             <div className="text-left min-w-0">
-              <div className="truncate text-sm font-medium">{profile.name || "Usuario"}</div>
-              <div className="truncate text-[11px] text-muted-foreground">Pro Workspace</div>
+              <div className="truncate text-sm font-medium">{profile.name || t("sidebar.defaultUser", "Usuario")}</div>
+              <div className="truncate text-[11px] text-muted-foreground">{t("settings.proPlan", "Pro Workspace")}</div>
             </div>
             <MoreHorizontal className="ml-auto h-4 w-4 text-slate-400" />
           </button>
@@ -138,40 +138,40 @@ function KosmoAppInner({ onSignOut }: { onSignOut: () => void }) {
       </aside>
 
       <main className="flex-1 min-w-0 overflow-hidden bg-card flex flex-col">
-        <div className="flex items-center justify-end gap-1.5 border-b border-border bg-white/80 backdrop-blur px-4 h-11 shrink-0">
+        <div className="relative z-10 flex items-center justify-end gap-1.5 border-b border-border bg-white/80 backdrop-blur px-4 h-11 shrink-0">
           <div className="relative">
             {langOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-                <div className="absolute top-full right-0 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg z-50">
-                <button
-                  onClick={() => {
-                    i18n.changeLanguage("es");
-                    localStorage.setItem("kosmo_lang", "es");
-                    setLangOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "es" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
-                >
-                  <img src="https://flagcdn.com/w20/es.png" srcSet="https://flagcdn.com/w40/es.png 2x" width="20" alt="ES" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
-                  <span>ES España</span>
-                </button>
-                <button
-                  onClick={() => {
-                    i18n.changeLanguage("en");
-                    localStorage.setItem("kosmo_lang", "en");
-                    setLangOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "en" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
-                >
-                  <img src="https://flagcdn.com/w20/us.png" srcSet="https://flagcdn.com/w40/us.png 2x" width="20" alt="US" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
-                  <span>EN Estados Unidos</span>
-                </button>
-              </div>
-            </>
-          )}
+                <div className="fixed right-4 top-12 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      i18n.changeLanguage("es");
+                      localStorage.setItem("kosmo_lang", "es");
+                      setLangOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "es" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
+                  >
+                    <img src="https://flagcdn.com/w20/es.png" srcSet="https://flagcdn.com/w40/es.png 2x" width="20" alt="ES" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
+                    <span>Español</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      i18n.changeLanguage("en");
+                      localStorage.setItem("kosmo_lang", "en");
+                      setLangOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 ${i18n.language === "en" ? "bg-slate-50 font-medium text-slate-900" : "text-slate-600"}`}
+                  >
+                    <img src="https://flagcdn.com/w20/us.png" srcSet="https://flagcdn.com/w40/us.png 2x" width="20" alt="US" className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />
+                    <span>English</span>
+                  </button>
+                </div>
+              </>
+            )}
             <button
               onClick={() => setLangOpen((v) => !v)}
-              title={i18n.language === "es" ? "Cambiar a Inglés" : "Change to Spanish"}
+              title={i18n.language === "es" ? t("sidebar.langTooltipEn", "Cambiar a Inglés") : t("sidebar.langTooltipEs", "Change to Spanish")}
               className={`flex items-center justify-center gap-1 h-8 px-2 rounded-md border border-border text-xs shadow-sm transition ${langOpen ? "bg-slate-100 text-slate-900" : "bg-card text-slate-700 hover:bg-slate-50"}`}
             >
               <img src={i18n.language === "es" ? "https://flagcdn.com/w20/es.png" : "https://flagcdn.com/w20/us.png"} srcSet={i18n.language === "es" ? "https://flagcdn.com/w40/es.png 2x" : "https://flagcdn.com/w40/us.png 2x"} width="20" alt={i18n.language.toUpperCase()} className="rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />

@@ -42,10 +42,12 @@ import {
   PlaceholderCard, StatusBadge, inputCls, SidebarProjectRow, SidebarItem,
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
+import { useTranslation } from "react-i18next";
 
 import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
 
 export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureAgents }: { onOpenProject: (id: string) => void; onSettings: (id: string) => void; onNew: () => void; onConfigureAgents: (id: string) => void }) {
+  const { t } = useTranslation();
   const [agents] = useAgentPrefs();
   const PROJECTS = useVisibleProjects();
   const [q, setQ] = useState("");
@@ -74,11 +76,11 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
     <div className="h-full overflow-y-auto px-10 py-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Workspace</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Todos tus proyectos en un solo lugar.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("myWorkspace.title", "My Workspace")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("myWorkspace.subtitle", "Tus proyectos, métricas y agentes.")}</p>
         </div>
         <button onClick={onNew} className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-          <Plus className="h-4 w-4" /> Nuevo proyecto
+          <Plus className="h-4 w-4" /> {t("myWorkspace.newProject", "Nuevo proyecto")}
         </button>
       </div>
 
@@ -88,18 +90,18 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por nombre, descripción o tag…"
+            placeholder={t("myWorkspace.search", "Buscar proyectos…")}
             className="w-full rounded-md border border-border bg-card pl-8 pr-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
           />
         </div>
         <select value={tag} onChange={(e) => setTag(e.target.value as any)} className="rounded-md border border-border bg-card px-2.5 py-2 text-sm">
-          <option value="all">Todos los tags</option>
-          {allTags.map((t) => <option key={t} value={t}>#{t}</option>)}
+          <option value="all">{t("myWorkspace.allTags", "Todas las etiquetas")}</option>
+          {allTags.map((tItem) => <option key={tItem} value={tItem}>#{tItem}</option>)}
         </select>
         <select value={sort} onChange={(e) => setSort(e.target.value as any)} className="rounded-md border border-border bg-card px-2.5 py-2 text-sm">
-          <option value="recent">Más recientes</option>
-          <option value="name">Nombre (A–Z)</option>
-          <option value="cost">Mayor gasto</option>
+          <option value="recent">{t("myWorkspace.sortRecent", "Más recientes")}</option>
+          <option value="name">{t("myWorkspace.sortName", "Nombre (A–Z)")}</option>
+          <option value="cost">{t("myWorkspace.sortCost", "Mayor gasto")}</option>
         </select>
         <div className="ml-auto flex items-center rounded-md border border-border bg-card p-0.5">
           <button onClick={() => setViewMode("grid")} className={`grid h-7 w-7 place-items-center rounded ${view === "grid" ? "bg-slate-100 text-foreground" : "text-muted-foreground"}`} title="Grid"><Box className="h-3.5 w-3.5" /></button>
@@ -107,14 +109,14 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
         </div>
       </div>
 
-      <div className="mt-2 text-[11px] text-muted-foreground">{items.length} resultado{items.length === 1 ? "" : "s"}</div>
+      <div className="mt-2 text-[11px] text-muted-foreground">{t("myWorkspace.results", "{{count}} result", { count: items.length })}</div>
 
       {items.length === 0 ? (
         <Card className="mt-4">
           <div className="grid place-items-center py-10 text-center">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400"><Search className="h-5 w-5" /></div>
-            <div className="mt-3 text-sm font-medium">Sin coincidencias</div>
-            <div className="text-xs text-muted-foreground">Ajusta los filtros o crea un nuevo proyecto.</div>
+            <div className="mt-3 text-sm font-medium">{t("myWorkspace.noMatches", "Sin coincidencias")}</div>
+            <div className="text-xs text-muted-foreground">{t("myWorkspace.adjustFilters", "Ajusta los filtros o crea un nuevo proyecto.")}</div>
           </div>
         </Card>
       ) : view === "grid" ? (
@@ -136,20 +138,20 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
                 {p.tags.map((t) => <span key={t} className="text-[10px] rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">#{t}</span>)}
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">Specs</div><div className="text-sm font-semibold tabular-nums">{p.specsCount}</div></div>
-                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">Tokens</div><div className="text-sm font-semibold tabular-nums">{fmtTokens(p.tokens)}</div></div>
-                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">Costo</div><div className="text-sm font-semibold tabular-nums">${p.cost.toFixed(0)}</div></div>
+                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">{t("myWorkspace.specs", "Specs")}</div><div className="text-sm font-semibold tabular-nums">{p.specsCount}</div></div>
+                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">{t("myWorkspace.tokens", "Tokens")}</div><div className="text-sm font-semibold tabular-nums">{fmtTokens(p.tokens)}</div></div>
+                <div><div className="text-[10px] uppercase text-slate-400 tracking-wider">{t("myWorkspace.cost", "Costo")}</div><div className="text-sm font-semibold tabular-nums">${p.cost.toFixed(0)}</div></div>
               </div>
               {!agents.configured && (
                 <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2">
                   <Bot className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                  <span className="flex-1 text-[11px] text-amber-800 font-medium">Agentes sin configurar</span>
-                  <button onClick={() => onConfigureAgents(p.id)} className="rounded-md bg-amber-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-700 transition">Configurar</button>
+                  <span className="flex-1 text-[11px] text-amber-800 font-medium">{t("myWorkspace.agentsUnconfigured", "Agentes sin configurar")}</span>
+                  <button onClick={() => onConfigureAgents(p.id)} className="rounded-md bg-amber-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-700 transition">{t("myWorkspace.configure", "Configurar")}</button>
                 </div>
               )}
               <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Actualizado {timeAgo(p.updatedAt)}</span>
-                <button onClick={() => onOpenProject(p.id)} className="inline-flex items-center gap-1 font-medium text-indigo-600 hover:text-indigo-700">Abrir <ArrowRight className="h-3 w-3" /></button>
+                <span>{t("myWorkspace.updated", "Actualizado")} {timeAgo(p.updatedAt)}</span>
+                <button onClick={() => onOpenProject(p.id)} className="inline-flex items-center gap-1 font-medium text-indigo-600 hover:text-indigo-700">{t("myWorkspace.open", "Abrir")} <ArrowRight className="h-3 w-3" /></button>
               </div>
             </div>
           ))}
@@ -159,14 +161,14 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400">
-                <th className="px-4 py-2 font-medium">Proyecto</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Agentes</th>
-                <th className="px-4 py-2 font-medium">Tags</th>
-                <th className="px-4 py-2 font-medium text-right">Specs</th>
-                <th className="px-4 py-2 font-medium text-right">Tokens</th>
-                <th className="px-4 py-2 font-medium text-right">Costo</th>
-                <th className="px-4 py-2 font-medium">Actualizado</th>
+                <th className="px-4 py-2 font-medium">{t("myWorkspace.project", "Proyecto")}</th>
+                <th className="px-4 py-2 font-medium">{t("myWorkspace.status", "Status")}</th>
+                <th className="px-4 py-2 font-medium">{t("myWorkspace.agents", "Agentes")}</th>
+                <th className="px-4 py-2 font-medium">{t("myWorkspace.tags", "Tags")}</th>
+                <th className="px-4 py-2 font-medium text-right">{t("myWorkspace.specs", "Specs")}</th>
+                <th className="px-4 py-2 font-medium text-right">{t("myWorkspace.tokens", "Tokens")}</th>
+                <th className="px-4 py-2 font-medium text-right">{t("myWorkspace.cost", "Costo")}</th>
+                <th className="px-4 py-2 font-medium">{t("myWorkspace.updated", "Actualizado")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -183,8 +185,8 @@ export function MyWorkspaceView({ onOpenProject, onSettings, onNew, onConfigureA
                     </button>
                   </td>
                   <td className="px-4 py-2.5"><StatusBadge status={p.status} /></td>
-                  <td className="px-4 py-2.5">{agents.configured ? <Badge tone="green">Listos</Badge> : <button onClick={() => onConfigureAgents(p.id)} className="inline-flex items-center gap-1"><Badge tone="amber">Sin configurar</Badge></button>}</td>
-                  <td className="px-4 py-2.5"><div className="flex flex-wrap gap-1">{p.tags.map((t) => <span key={t} className="text-[10px] rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">#{t}</span>)}</div></td>
+                  <td className="px-4 py-2.5">{agents.configured ? <Badge tone="green">{t("myWorkspace.ready", "Listos")}</Badge> : <button onClick={() => onConfigureAgents(p.id)} className="inline-flex items-center gap-1"><Badge tone="amber">{t("myWorkspace.agentsUnconfigured", "Sin configurar")}</Badge></button>}</td>
+                  <td className="px-4 py-2.5"><div className="flex flex-wrap gap-1">{p.tags.map((tItem) => <span key={tItem} className="text-[10px] rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">#{tItem}</span>)}</div></td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{p.specsCount}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">{fmtTokens(p.tokens)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums font-semibold">${p.cost.toFixed(2)}</td>

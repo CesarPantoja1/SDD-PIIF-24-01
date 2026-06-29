@@ -42,21 +42,30 @@ import {
   PlaceholderCard, StatusBadge, inputCls, SidebarProjectRow, SidebarItem,
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
+import { useTranslation } from "react-i18next";
 
 import { CodingAgentsTab, ProjectMonitoring, AgentRow, AgentPicker, AgentPickerInner, PromptEditorModal, buildUsage } from "@/components/kosmo/agents";
 import { ProjectGeneralTab } from "@/components/kosmo/settings/ProjectGeneralTab";
 import { ProjectDangerZone } from "@/components/kosmo/modals/ProjectDangerZone";
 
 export function ProjectSettings({ projectId, tab, onTab, onOpenApiKeys, onDeleted }: { projectId: string; tab: string; onTab: (t: string) => void; onOpenApiKeys: () => void; onDeleted: () => void }) {
-  const tabs = ["General", "Repository", "Coding Agents", "Monitoring", "Danger Zone"];
+  const { t } = useTranslation();
+  const tabKeys = ["General", "Repository", "Coding Agents", "Monitoring", "Danger Zone"];
+  const tabLabels: Record<string, string> = {
+    "General": t("projectSettings.tabGeneral", "General"),
+    "Repository": t("projectSettings.tabRepository", "Repository"),
+    "Coding Agents": t("projectSettings.tabCodingAgents", "Coding Agents"),
+    "Monitoring": t("projectSettings.tabMonitoring", "Monitoring"),
+    "Danger Zone": t("projectSettings.tabDangerZone", "Danger Zone"),
+  };
   const project = useProjectById(projectId);
   const [agents, setAgents] = useProjectAgents(projectId);
   return (
     <div className="flex h-full">
-      <InnerSidebar title={`${project.name} · Settings`} tabs={tabs} active={tab} onSelect={onTab} />
+      <InnerSidebar title={`${project.name} · ${t("projectSettings.title", "Settings")}`} tabs={tabKeys} active={tab} onSelect={onTab} tabLabels={tabLabels} />
       <div className="flex-1 overflow-y-auto px-10 py-8">
-        <h1 className="text-2xl font-semibold tracking-tight">{tab}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Project-scoped configuration for {project.name}.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{tabLabels[tab] || tab}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("projectSettings.subtitle", "Project-scoped configuration for {{name}}.", { name: project.name })}</p>
         <div className="mt-8">
           {tab === "General" && <ProjectGeneralTab projectId={projectId} />}
           {tab === "Repository" && <RepositoryTab />}
@@ -71,6 +80,7 @@ export function ProjectSettings({ projectId, tab, onTab, onOpenApiKeys, onDelete
 
 
 export function RepositoryTab() {
+  const { t } = useTranslation();
   const [repo, setRepo] = useState("");
   const [branch, setBranch] = useState("main");
   return (
@@ -78,14 +88,14 @@ export function RepositoryTab() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GitBranch className="h-4 w-4 text-muted-foreground" />
-          <h3 className="font-semibold">Linked repository</h3>
+          <h3 className="font-semibold">{t("projectSettings.linkedRepo", "Linked repository")}</h3>
         </div>
-        <Badge tone="slate">Not connected</Badge>
+        <Badge tone="slate">{t("globalSettings.notConnected", "Not connected")}</Badge>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">Link this project to a GitHub repository so KOSMO can read and write code.</p>
+      <p className="mt-1 text-sm text-muted-foreground">{t("projectSettings.linkedRepoDesc", "Link this project to a GitHub repository so KOSMO can read and write code.")}</p>
       <div className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr]">
         <div>
-          <label className="text-xs font-medium text-slate-600">Repository <span className="text-slate-400 font-normal">(optional)</span></label>
+          <label className="text-xs font-medium text-slate-600">{t("projectSettings.repository", "Repository")} <span className="text-slate-400 font-normal">{t("projectSettings.optional", "(optional)")}</span></label>
           <input
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
@@ -94,14 +104,14 @@ export function RepositoryTab() {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-slate-600">Default branch</label>
+          <label className="text-xs font-medium text-slate-600">{t("projectSettings.defaultBranch", "Default branch")}</label>
           <select value={branch} onChange={(e) => setBranch(e.target.value)} className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm bg-card">
             <option>main</option><option>develop</option><option>staging</option>
           </select>
         </div>
       </div>
       <div className="mt-5 flex justify-end">
-        <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700">Link repository</button>
+        <button className="rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700">{t("projectSettings.linkRepository", "Link repository")}</button>
       </div>
     </Card>
   );

@@ -140,7 +140,7 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
       <div className="border-b border-border px-6 pt-4 pb-3">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <button onClick={onHome} className="hover:text-indigo-600 hover:underline">Projects</button>
+          <button onClick={onHome} className="hover:text-indigo-600 hover:underline">{t("workspace.projectsBreadcrumb", "Projects")}</button>
           <ChevronRight className="h-3 w-3" />
           <button onClick={() => onNav(null, "brief")} className="hover:text-indigo-600 hover:underline">{project.name}</button>
           {contextSpec && (

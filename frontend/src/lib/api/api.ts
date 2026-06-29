@@ -167,7 +167,7 @@ export function streamDiscovery(
   docKey: string,
   onEvaluation: (data: Evaluation) => void,
   onComplete: (data: Record<string, unknown>) => void,
-  onError: (error: string) => void,
+  onError: (error: any) => void,
   specId?: string | null,
 ): AbortController {
   const controller = new AbortController();
