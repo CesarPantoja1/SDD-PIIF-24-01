@@ -60,7 +60,7 @@ function AuthPage() {
 
       navigate({ to: "/" });
     } catch (e: any) {
-      setErr(e.message ?? "Error desconocido");
+      setErr(e.message ?? t("auth.errorGeneric", "Error desconocido"));
     } finally {
       setBusy(false);
     }
@@ -68,12 +68,12 @@ function AuthPage() {
 
   const forgot = async () => {
     setErr(null); setInfo(null);
-    if (!email) { setErr("Ingresa tu correo para recuperar la contraseña."); return; }
+    if (!email) { setErr(t("auth.enterEmailToReset", "Ingresa tu correo para recuperar la contraseña.")); return; }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin,
     });
     if (error) setErr(error.message);
-    else setInfo("Te enviamos un enlace para restablecer tu contraseña.");
+    else setInfo(t("auth.resetLinkSent", "Te enviamos un enlace para restablecer tu contraseña."));
   };
 
   return (

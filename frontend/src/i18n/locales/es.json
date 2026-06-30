@@ -161,7 +161,9 @@
     "featAgents": "Agentes por etapa",
     "featVibe": "Vibe Modeling",
     "featControl": "Tu API key, tu control",
-    "copyright": "© {{year}} KOSMO · Proyecto académico EPN"
+    "copyright": "© {{year}} KOSMO · Proyecto académico EPN",
+    "enterEmailToReset": "Ingresa tu correo para recuperar la contraseña.",
+    "resetLinkSent": "Te enviamos un enlace para restablecer tu contraseña."
   },
   "status": {
     "pending": "Pendiente",
