@@ -67,19 +67,20 @@ export function ApollonDesignEditor({
 
   // Mount / unmount the Apollon editor
   useEffect(() => {
-    if (!containerRef.current) return;
     let destroyed = false;
+
+    if (!isGenerated) {
+      setLoading(false);
+      return;
+    }
+
+    if (!containerRef.current) return;
 
     setLoading(true);
 
     // Dynamic import to avoid loading ~2.4 MB upfront
     import("@tumaet/apollon").then((apollon) => {
       if (destroyed || !containerRef.current) return;
-      
-      if (!isGenerated) {
-        setLoading(false);
-        return;
-      }
 
       const { ApollonEditor, UMLDiagramType, ApollonMode, Locale } = apollon;
 
@@ -95,9 +96,16 @@ export function ApollonDesignEditor({
       }
       
       // If there's no model, or if the model is practically empty (no nodes),
-      // force the use of the hardcoded design JSON.
+      // force the use of a blank diagram instead of a mock.
       if (!savedModel || !Array.isArray(savedModel.nodes) || savedModel.nodes.length === 0) {
-        savedModel = designJson;
+        savedModel = {
+          version: "4.0.0",
+          type: "ClassDiagram",
+          title: "Blank Diagram",
+          nodes: [],
+          edges: [],
+          assessments: {}
+        };
       }
 
       const options: Record<string, unknown> = {
@@ -270,7 +278,7 @@ export function ApollonDesignEditor({
           <div className="absolute inset-0 z-10 grid place-items-center bg-white/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
-              <span className="text-sm text-slate-500 font-medium">Cargando editor de diagramas…</span>
+              <span className="text-sm text-slate-500 font-medium">{t('workspace.loadingDiagramEditor', 'Cargando editor de diagramas…')}</span>
             </div>
           </div>
         )}
@@ -279,9 +287,9 @@ export function ApollonDesignEditor({
             <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
               <Layers className="h-8 w-8 text-slate-300" />
             </div>
-            <h3 className="text-lg font-medium text-slate-800">Diagrama vacío</h3>
+            <h3 className="text-lg font-medium text-slate-800">{t('workspace.emptyDiagram', 'Diagrama vacío')}</h3>
             <p className="mt-1 text-sm text-slate-500 max-w-sm">
-              Este diagrama aún no ha sido generado. Usa el botón "Generar" en la parte inferior para que la IA proponga la arquitectura inicial.
+              {t('workspace.emptyDiagramDesc', 'Este diagrama aún no ha sido generado. Usa el botón "Generar" en la parte inferior para que la IA proponga la arquitectura inicial.')}
             </p>
           </div>
         )}

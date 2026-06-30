@@ -60,15 +60,7 @@ export function SpecsOverview({
           {t('workspace.specsDesc')}
         </p>
 
-        <button
-          onClick={onGenerateSpecs}
-          className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all active:scale-[0.98]"
-        >
-          <Sparkles className="h-4 w-4" />
-          {t('workspace.generateSpecsWithAI')}
-        </button>
-
-        <p className="mt-4 text-xs text-slate-400">
+        <p className="mt-8 text-xs text-slate-400">
           {t('workspace.specsFooter')}
         </p>
       </div>
@@ -150,12 +142,12 @@ export function SpecsOverview({
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-                        Progreso
+                        {t('workspace.progress', 'Progreso')}
                       </span>
                       <span className={`text-[11px] font-bold ${
                         allDone ? "text-emerald-600" : "text-slate-600"
                       }`}>
-                        {completedPhases}/{totalPhases} Fases
+                        {completedPhases}/{totalPhases} {t('workspace.phases', 'Fases')}
                       </span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -175,7 +167,7 @@ export function SpecsOverview({
                       return (
                         <div
                           key={key}
-                          title={`${DOCS[key].label}: ${isGen ? "Generado" : "Pendiente"}`}
+                          title={`${DOCS[key].label}: ${isGen ? t('workspace.generated', 'Generado') : t('workspace.pending', 'Pendiente')}`}
                           className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-bold transition ${
                             isGen
                               ? `bg-${color}-100 text-${color}-700 ring-1 ring-${color}-200`

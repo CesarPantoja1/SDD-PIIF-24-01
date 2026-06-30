@@ -7,6 +7,8 @@
  *   const data = await apiClient.get("/auth/me", token);
  */
 
+import i18n from "@/i18n";
+
 const BACKEND_URL =
   (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
   "http://localhost:8000";
@@ -41,8 +43,21 @@ async function request<T>(
   if (!response.ok) {
     let detail = response.statusText;
     try {
-      const json = (await response.json()) as { detail?: string };
-      if (json.detail) detail = json.detail;
+      const json = (await response.json()) as { detail?: any };
+      if (json.detail) {
+        if (typeof json.detail === "string") {
+          detail = json.detail;
+        } else if (Array.isArray(json.detail)) {
+          detail = json.detail.map((err: any) => {
+            const key = `apiErrors.${err.type}`;
+            const translated = i18n.t(key, err.ctx || {});
+            if (translated !== key) return translated;
+            return err.msg || JSON.stringify(err);
+          }).join(" \n");
+        } else {
+          detail = JSON.stringify(json.detail);
+        }
+      }
     } catch {
       /* ignore parse errors */
     }

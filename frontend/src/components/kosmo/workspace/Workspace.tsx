@@ -494,8 +494,13 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                 }
               } else {
                 const generatedKey = docKey(working.specId, working.doc);
-                localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [generatedKey]: true }));
-                window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.generated.${projectId}`, value: { ...generated, [generatedKey]: true } } }));
+                
+                // Si content es un string vacío, significa que falló el backend. No marcar como generado.
+                // Si content es undefined, significa que es Mock Mode, sí marcar.
+                if (content !== "") {
+                  localStorage.setItem(`kosmo.mock.generated.${projectId}`, JSON.stringify({ ...generated, [generatedKey]: true }));
+                  window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: `kosmo.mock.generated.${projectId}`, value: { ...generated, [generatedKey]: true } } }));
+                }
 
                 // Save real content from SSE, or fall back to mock
                 if (content && (working.doc === "brief" || working.doc === "requirements")) {
@@ -520,11 +525,11 @@ export function Workspace({ projectId, specId, doc, autoStartBrief = false, onNa
                       });
                     } catch (err) {
                       console.error("Failed to parse AI design JSON", err);
-                      const specName = specs.find(s => s.id === working.specId)?.name;
-                      const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
-                      localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));
+                      // In case of error, we remove the key so it falls back to the blank diagram
+                      localStorage.removeItem(storageKey);
                     }
-                  } else {
+                  } else if (content === undefined) {
+                    // Only save mock diagram in Mock Mode (when content is undefined)
                     const specName = specs.find(s => s.id === working.specId)?.name;
                     const perSpecDesign = specName ? variant.designBySpec?.[specName] : undefined;
                     localStorage.setItem(storageKey, JSON.stringify(perSpecDesign ?? Object.values(variant.designBySpec ?? {})[0] ?? {}));

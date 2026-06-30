@@ -49,6 +49,7 @@ def run_discovery_agent(
         f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
+        max_retries=10,
     )
 
     agent = create_agent(
@@ -64,8 +65,8 @@ def run_discovery_agent(
             SummarizationMiddleware(
                 model=resolved_model,
                 backend=StateBackend(),
-                trigger=("fraction", 0.85),
-                keep=("fraction", 0.10),
+                trigger=("tokens", 100000),
+                keep=("tokens", 10000),
             ),
         ],
         system_prompt=system_prompt or DISCOVERY_CREATOR_DEFAULT_PROMPT,
@@ -160,6 +161,7 @@ def run_specs_agent(
         f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
+        max_retries=10,
     )
 
     agent = create_agent(
@@ -175,8 +177,8 @@ def run_specs_agent(
             SummarizationMiddleware(
                 model=resolved_model,
                 backend=StateBackend(),
-                trigger=("fraction", 0.85),
-                keep=("fraction", 0.10),
+                trigger=("tokens", 100000),
+                keep=("tokens", 10000),
             ),
         ],
         system_prompt=system_prompt or SPECS_CREATOR_DEFAULT_PROMPT,
@@ -248,6 +250,7 @@ def run_requirements_agent(
         f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
+        max_retries=10,
     )
 
     agent = create_agent(
@@ -263,8 +266,8 @@ def run_requirements_agent(
             SummarizationMiddleware(
                 model=resolved_model,
                 backend=StateBackend(),
-                trigger=("fraction", 0.85),
-                keep=("fraction", 0.10),
+                trigger=("tokens", 100000),
+                keep=("tokens", 10000),
             ),
         ],
         system_prompt=system_prompt or REQUIREMENTS_CREATOR_DEFAULT_PROMPT,
@@ -337,6 +340,7 @@ def run_design_agent(
         f"{lc_provider}:{model_name}",
         api_key=api_key,
         temperature=0.3,
+        max_retries=10,
     )
 
     agent = create_agent(
@@ -352,8 +356,8 @@ def run_design_agent(
             SummarizationMiddleware(
                 model=resolved_model,
                 backend=StateBackend(),
-                trigger=("fraction", 0.85),
-                keep=("fraction", 0.10),
+                trigger=("tokens", 100000),
+                keep=("tokens", 10000),
             ),
         ],
         system_prompt=system_prompt or DESIGN_CREATOR_DEFAULT_PROMPT,

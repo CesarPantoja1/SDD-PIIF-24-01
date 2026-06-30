@@ -80,7 +80,8 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
     try { html = localStorage.getItem(storageKey) ?? ""; } catch {}
 
     // 1. If we have local storage content, display it immediately
-    if (html) {
+    const cleanHtml = html.replace(/<[^>]*>?/gm, '').trim();
+    if (html && cleanHtml.length > 0) {
       editorRef.current.innerHTML = html;
       seedRef.current = html;
       setDirty(false);
@@ -116,14 +117,26 @@ export function PhaseEditor({ projectId, specId, scopeKey, doc, fileName, specNa
                 window.dispatchEvent(new CustomEvent("kosmo:local", { detail: { key: genKey, value: { ...existing, [currentDocKey]: true } } }));
               } catch {}
             }
-            editorRef.current.innerHTML = htmlContent;
-            setLoadedFromBackend(true);
-            setTimeout(() => {
-              if (editorRef.current) {
-                seedRef.current = editorRef.current.innerHTML;
-                setDirty(false);
-              }
-            }, 0);
+            const cleanHtml = htmlContent.replace(/<[^>]*>?/gm, '').trim();
+            if (cleanHtml.length > 0) {
+              editorRef.current.innerHTML = htmlContent;
+              setLoadedFromBackend(true);
+              setTimeout(() => {
+                if (editorRef.current) {
+                  seedRef.current = editorRef.current.innerHTML;
+                  setDirty(false);
+                }
+              }, 0);
+            } else {
+              const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
+              editorRef.current.innerHTML = fallbackHtml;
+              setTimeout(() => {
+                if (editorRef.current) {
+                  seedRef.current = editorRef.current.innerHTML;
+                  setDirty(false);
+                }
+              }, 0);
+            }
           } else if (editorRef.current) {
             // Backend returned no content for this spec/doc, so apply template or keep empty
             const fallbackHtml = isGenerated ? phaseInitialHtml(doc, specName, variantIdx) : "";
@@ -374,7 +387,7 @@ export function phaseInitialHtml(doc: DocKey, specName?: string | null, variantI
 
 
 export function phaseDocName(p: string) {
-  return { overview: "Documento de Visión", specs: "Requerimientos & Historias", design: "Diseño Técnico", tasks: "Plan de Ejecución" }[p] || "";
+  return { overview: "Documento de Visión", specs: "Requerimientos & Historias", design: "Diseño", tasks: "Plan de Ejecución" }[p] || "";
 }
 
 
@@ -481,7 +494,7 @@ export function SpecsView() {
 export function DesignView() {
   return (
     <div className="max-w-4xl">
-      <h1 className="text-3xl font-semibold tracking-tight">Diseño Técnico</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Diseño</h1>
       <p className="mt-2 text-muted-foreground">Arquitectura, modelos de datos y estructura del repo.</p>
 
       <h2 className="mt-8 text-lg font-semibold">Diagrama de componentes</h2>

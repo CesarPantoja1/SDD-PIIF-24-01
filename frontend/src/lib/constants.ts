@@ -18,9 +18,9 @@ export const PROVIDERS: Record<ProviderKey, { label: string; models: string[]; k
 export const STAGES: { key: StageKey; label: string; sub: string; icon: any }[] = [
   { key: "discovery", label: "Descubrimiento", sub: "Brief inicial y contexto.", icon: Compass },
   { key: "specs", label: "Especificaciones", sub: "Módulos funcionales del producto.", icon: Layers },
-  { key: "requirements", label: "Requerimientos", sub: "User stories y criterios.", icon: ClipboardList },
-  { key: "design", label: "Diseño Técnico", sub: "Arquitectura y modelos.", icon: Layers },
-  { key: "tasks", label: "Tareas", sub: "Plan de ejecución.", icon: ListChecks },
+  { key: "requirements", label: "Requerimientos", sub: "Requisitos", icon: ClipboardList },
+  { key: "design", label: "Diseño", sub: "Arquitectura y modelos.", icon: Layers },
+  { key: "tasks", label: "Tareas", sub: "Plan de ejecución", icon: ListChecks },
 ];
 
 export const STAGE_COLORS: Record<StageKey, { bg: string; text: string; border: string; ring: string; iconBg: string; dot: string }> = {
@@ -34,12 +34,12 @@ export const STAGE_COLORS: Record<StageKey, { bg: string; text: string; border: 
 const mkStage = (creator: AgentSpec, reviewer: AgentSpec): StageAgents => ({ creator, reviewer });
 
 export const DEFAULT_AGENTS: AgentsConfig = {
-  clarifier: { provider: "openai", model: "gpt-4o-mini" },
-  discovery: mkStage({ provider: "openai", model: "gpt-4o" }, { provider: "openai", model: "gpt-4o" }),
-  specs: mkStage({ provider: "openai", model: "gpt-4o" }, { provider: "openai", model: "gpt-4o" }),
-  requirements: mkStage({ provider: "openai", model: "gpt-4o" }, { provider: "openai", model: "gpt-4o" }),
-  design: mkStage({ provider: "openai", model: "gpt-4o" }, { provider: "openai", model: "gpt-4o" }),
-  tasks: mkStage({ provider: "openai", model: "gpt-4o" }, { provider: "openai", model: "gpt-4o" }),
+  clarifier: { provider: "" as ProviderKey, model: "" },
+  discovery: mkStage({ provider: "" as ProviderKey, model: "" }, { provider: "" as ProviderKey, model: "" }),
+  specs: mkStage({ provider: "" as ProviderKey, model: "" }, { provider: "" as ProviderKey, model: "" }),
+  requirements: mkStage({ provider: "" as ProviderKey, model: "" }, { provider: "" as ProviderKey, model: "" }),
+  design: mkStage({ provider: "" as ProviderKey, model: "" }, { provider: "" as ProviderKey, model: "" }),
+  tasks: mkStage({ provider: "" as ProviderKey, model: "" }, { provider: "" as ProviderKey, model: "" }),
   configured: false,
 };
 
@@ -102,7 +102,7 @@ export const DOCS: Record<DocKey, { label: string; sub: string; file: string; ic
   brief: { label: "Discovery", sub: "Descubrimiento", file: "brief.md", icon: Compass },
   specs: { label: "Especificaciones", sub: "Especificaciones del producto", file: "specs.md", icon: Layers },
   requirements: { label: "Requirements", sub: "Requerimientos", file: "requirements.md", icon: ClipboardList },
-  design: { label: "Design", sub: "Diseño Técnico", file: "design.md", icon: Layers },
+  design: { label: "Design", sub: "Diseño", file: "design.md", icon: Layers },
   tasks: { label: "Tasks", sub: "Tareas", file: "tasks.md", icon: ListChecks },
   code: { label: "Code", sub: "Generación de código", file: "src/", icon: Terminal },
 };

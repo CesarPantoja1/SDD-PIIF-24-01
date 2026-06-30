@@ -131,39 +131,20 @@ REQUIREMENTS_CREATOR_DEFAULT_PROMPT = """Eres un analista de requerimientos expe
 - **EARS**: Todos los criterios de aceptación deben comenzar con las palabras clave en inglés: "When", "If", "While", "Where", "The [system] shall".
 - **Sin UI**: Los requisitos describen lógica de negocio, no colores, pantallas ni botones específicos.
 - **Formato**: Los títulos de los requisitos DEBEN usar un identificador numérico (ej: "Requisito 1", "Requisito 2").
-- Solo genera el contenido en Markdown, sin frases conversacionales y NUNCA incluyas esta lista de reglas en tu respuesta.
+- **Evita la doble generación**: NO imprimas el documento Markdown en tu respuesta conversacional (Thought/Final Answer). Llama DIRECTAMENTE a la herramienta `save_requirements()` pasando el documento completo como argumento.
 """
 
 REQUIREMENTS_RUBRIC = """
 - El documento contiene requisitos basados exclusivamente en la descripción del módulo actual.
-- Los títulos de los requisitos usan identificadores numéricos (ej. "Requisito 1", no "Requisito A").
-- Cada requisito incluye un Objetivo en formato de historia de usuario (Como [Rol] quiero [Capacidad] para [Beneficio]).
-- Cada requisito tiene Criterios de Aceptación que siguen estrictamente el formato EARS (iniciando con When, If, While, Where, o The [system] shall).
+- Los títulos de los requisitos están claramente identificados de forma numerada.
+- Cada requisito incluye un Objetivo (ej. Como [Rol] quiero [Capacidad] para [Beneficio]).
+- Los Criterios de Aceptación siguen el formato EARS (iniciando con When, If, While, Where, o The [system] shall).
 - Hay al menos 2 criterios de aceptación por requisito.
-- Los requisitos no describen detalles de UI como botones, modales, colores o menús, sino lógica de negocio y comportamiento observable.
-- No hay frases conversacionales ni texto fuera del formato del documento.
+- Los requisitos se centran en comportamiento y reglas de negocio, no en diseño de UI.
 """
 
 DESIGN_CREATOR_DEFAULT_PROMPT = """Actúa como un Arquitecto de Software Senior. Tu tarea es diseñar el Diagrama de Clases UML completo basándote en los Requisitos y el Discovery proporcionados. 
-Debes generar tu respuesta ESTRICTAMENTE usando la herramienta 'save_design' con la siguiente estructura JSON semántica:
-
-{
-  "classes": [
-    {
-      "name": "NombreClase",
-      "stereotype": "", // Valores válidos: "", "Abstract", "Interface", "Enumeration"
-      "attributes": ["+ id: String", "- nombre: String"],
-      "methods": ["+ operacion(): Void"]
-    }
-  ],
-  "relationships": [
-    {
-      "source": "NombreOrigen",
-      "target": "NombreDestino",
-      "type": "ClassUnidirectional" // Opciones: ClassInheritance, ClassRealization, ClassDependency, ClassAggregation, ClassComposition, ClassUnidirectional, ClassBidirectional
-    }
-  ]
-}
+Debes generar tu respuesta ESTRICTAMENTE usando la herramienta 'save_design'.
 
 ## Reglas
 - Mínimo 5 clases de dominio (NO clases técnicas como Manager, Controller, Service)

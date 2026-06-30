@@ -44,20 +44,22 @@ import {
 } from "@/components/kosmo/common";
 import { useTranslation } from "react-i18next";
 
-function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey, t: any) {
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey | "", t: any) {
   const all = Object.keys(PROVIDERS) as ProviderKey[];
   const withKeys = all.filter((k) => !!keys[k]?.trim());
-  const currentHasKey = !!keys[currentProvider]?.trim();
+  const currentHasKey = currentProvider ? !!keys[currentProvider]?.trim() : false;
   const withKeysSet = new Set(withKeys);
 
-  // Always include the current provider so the <select value={...}> matches
-  // a real <option> and onChange fires properly.
-  const seen = new Set(withKeys);
-  const options = withKeys.map((k) => (
-    <option key={k} value={k}>{PROVIDERS[k].label}</option>
-  ));
+  const options = [
+    <option key="empty" value="" disabled>{t("globalSettings.selectProvider", "Seleccionar Proveedor...")}</option>
+  ];
 
-  if (!currentHasKey) {
+  const seen = new Set(withKeys);
+  for (const k of withKeys) {
+    options.push(<option key={k} value={k}>{PROVIDERS[k].label}</option>);
+  }
+
+  if (currentProvider && !currentHasKey) {
     seen.add(currentProvider);
     options.push(
       <option key={currentProvider} value={currentProvider} disabled>
@@ -85,8 +87,8 @@ export function AgentPicker({ spec, keys, onChange, onOpenApiKeys }: { spec: Age
 
 export function AgentPickerInner({ spec, keys, onChange, onOpenApiKeys, hideMissingKey }: { spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void; hideMissingKey?: boolean }) {
   const { t } = useTranslation();
-  const hasKey = !!keys[spec.provider]?.trim();
-  const models = PROVIDERS[spec.provider].models;
+  const hasKey = spec.provider ? !!keys[spec.provider]?.trim() : false;
+  const models = spec.provider ? PROVIDERS[spec.provider].models : [];
   return (
     <div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -103,16 +105,17 @@ export function AgentPickerInner({ spec, keys, onChange, onOpenApiKeys, hideMiss
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.model", "Modelo")}</label>
           <select
-            value={spec.model}
+            value={spec.model || ""}
             onChange={(e) => onChange({ model: e.target.value })}
-            disabled={!hasKey}
+            disabled={!hasKey || !spec.provider}
             className="mt-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm disabled:opacity-60"
           >
+            <option value="" disabled>{t("globalSettings.selectModel", "Seleccionar Modelo...")}</option>
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
       </div>
-      {!hasKey && !hideMissingKey && <MissingKeyHint provider={spec.provider} onOpenApiKeys={onOpenApiKeys} />}
+      {!hasKey && !hideMissingKey && spec.provider !== "" && <MissingKeyHint provider={spec.provider} onOpenApiKeys={onOpenApiKeys} />}
     </div>
   );
 }

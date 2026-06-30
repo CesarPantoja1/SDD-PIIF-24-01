@@ -164,7 +164,14 @@ export function AgentWorkingModal({
 
   // SSE connection
   useEffect(() => {
-    if (!isDiscoverySSE || !sseToken || !sseProjectId || !sseProvider || !sseModel) return;
+    if (!isDiscoverySSE) return;
+    if (!sseToken || !sseProjectId) return;
+    
+    if (!sseProvider || !sseModel) {
+      setSseFinished(true);
+      setSseError(t("globalSettings.agentNotConfigured", "No tienes un agente configurado para esta etapa. Por favor, selecciona uno."));
+      return;
+    }
 
     setSseFinished(false);
     setSseError(null);
@@ -229,7 +236,7 @@ export function AgentWorkingModal({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-slate-800 tracking-tight">
-              {sseError ? t('workspace.errorGeneric', 'Error de Generación') : finished ? "Propuesta lista" : `${verb}…`}
+              {sseError ? t('workspace.errorGeneric', 'Error de Generación') : finished ? t('workspace.proposalReady', 'Propuesta lista') : `${verb}…`}
             </h3>
             <p className="text-xs text-muted-foreground truncate">{toLabel}</p>
           </div>
@@ -456,7 +463,7 @@ export function AgentWorkingModal({
                 disabled={!finished}
                 className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Check className="h-3.5 w-3.5" /> {t('workspace.reviewProposal')}
+                <Check className="h-3.5 w-3.5" /> {t('workspace.reviewProposal', 'Revisar propuesta')}
               </button>
             )}
           </div>

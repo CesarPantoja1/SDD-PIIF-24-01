@@ -32,6 +32,8 @@ export function useApiKeys() {
       );
       const next = { ...DEFAULT_KEYS, ...res.keys };
       qc.setQueryData(queryKey, next);
+      // Invalidate agent configs so UI reflects any auto-completed changes
+      qc.invalidateQueries({ queryKey: ["agent_configs"] });
       return next;
     },
     [token, qc],
@@ -45,6 +47,8 @@ export function useApiKeys() {
       );
       const next = { ...DEFAULT_KEYS, ...res.keys };
       qc.setQueryData(queryKey, next);
+      // Invalidate agent configs so UI reflects any deleted dependencies
+      qc.invalidateQueries({ queryKey: ["agent_configs"] });
       return next;
     },
     [token, qc],

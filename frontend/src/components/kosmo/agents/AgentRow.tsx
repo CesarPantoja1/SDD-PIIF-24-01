@@ -44,17 +44,21 @@ import {
   MenuItem, ProjectTree,
 } from "@/components/kosmo/common";
 
-function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey, t: any) {
+function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey | "", t: any) {
   const all = Object.keys(PROVIDERS) as ProviderKey[];
   const withKeys = all.filter((k) => !!keys[k]?.trim());
-  const currentHasKey = !!keys[currentProvider]?.trim();
+  const currentHasKey = currentProvider ? !!keys[currentProvider]?.trim() : false;
   const seen = new Set(withKeys);
 
-  const options = withKeys.map((k) => (
-    <option key={k} value={k}>{PROVIDERS[k].label}</option>
-  ));
+  const options = [
+    <option key="empty" value="" disabled>{t("globalSettings.selectProvider", "Seleccionar Proveedor...")}</option>
+  ];
 
-  if (!currentHasKey) {
+  for (const k of withKeys) {
+    options.push(<option key={k} value={k}>{PROVIDERS[k].label}</option>);
+  }
+
+  if (currentProvider && !currentHasKey) {
     seen.add(currentProvider);
     options.push(
       <option key={currentProvider} value={currentProvider} disabled>
@@ -76,8 +80,8 @@ function buildProviderOptions(keys: ApiKeys, currentProvider: ProviderKey, t: an
 
 export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onEditPrompt }: { label: string; desc: string; spec: AgentSpec; keys: ApiKeys; onChange: (p: Partial<AgentSpec>) => void; onOpenApiKeys?: () => void; onEditPrompt?: () => void }) {
   const { t } = useTranslation();
-  const hasKey = !!keys[spec.provider]?.trim();
-  const models = PROVIDERS[spec.provider].models;
+  const hasKey = spec.provider ? !!keys[spec.provider]?.trim() : false;
+  const models = spec.provider ? PROVIDERS[spec.provider].models : [];
   return (
     <div className="rounded-lg border border-border p-4">
       <div className="flex items-center gap-3">
@@ -100,7 +104,7 @@ export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onE
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.provider", "Proveedor")}</label>
           <select
-            value={spec.provider}
+            value={spec.provider || ""}
             onChange={(e) => onChange({ provider: e.target.value as ProviderKey })}
             className="mt-1 w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
@@ -110,15 +114,16 @@ export function AgentRow({ label, desc, spec, keys, onChange, onOpenApiKeys, onE
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">{t("globalSettings.model", "Modelo")}</label>
           <select
-            value={spec.model}
+            value={spec.model || ""}
             onChange={(e) => onChange({ model: e.target.value })}
             className="mt-1 w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
+            <option value="" disabled>{t("globalSettings.selectModel", "Seleccionar Modelo...")}</option>
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
       </div>
-      {!hasKey && <MissingKeyHint provider={spec.provider} onOpenApiKeys={onOpenApiKeys} />}
+      {!hasKey && spec.provider !== "" && <MissingKeyHint provider={spec.provider} onOpenApiKeys={onOpenApiKeys} />}
     </div>
   );
 }

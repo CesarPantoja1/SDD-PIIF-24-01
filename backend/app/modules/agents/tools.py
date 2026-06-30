@@ -9,6 +9,7 @@ import json
 
 from langgraph.config import get_config
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
 
 from app.db.supabase import get_supabase_user_client
 
@@ -235,9 +236,26 @@ def read_full_requirements() -> str:
     return "Error: could not read requirements from database."
 
 
+class SemanticRelationship(BaseModel):
+    source: str = Field(..., description="Nombre exacto de la clase origen")
+    target: str = Field(..., description="Nombre exacto de la clase destino")
+    type: str = Field(..., description="Tipo de relación (ej. ClassInheritance, ClassAggregation, ClassComposition, ClassDependency, ClassUnidirectional, ClassBidirectional)")
+
+class SemanticClass(BaseModel):
+    name: str = Field(..., description="Nombre de la clase")
+    stereotype: str = Field("", description="Estereotipo (ej. Enumeration, Interface, Abstract)")
+    attributes: list[str] = Field(default_factory=list, description="Lista de atributos (ej. '+ id: String')")
+    methods: list[str] = Field(default_factory=list, description="Lista de métodos (ej. '+ operacion(): Void')")
+
 @tool
-def save_design(content: str) -> str:
-    """Save the design document (Class Diagram JSON) for the current spec. Pass the FULL JSON string."""
+def save_design(classes: list[SemanticClass], relationships: list[SemanticRelationship]) -> str:
+    """Save the design document for the current spec. Pass the lists of classes and relationships."""
+    
+    content = json.dumps({
+        "classes": [c.model_dump() if hasattr(c, "model_dump") else c.dict() for c in classes],
+        "relationships": [r.model_dump() if hasattr(r, "model_dump") else r.dict() for r in relationships]
+    })
+    
     if len(content) > 100_000:
         return "Error: content too large (max 100,000 characters)."
 

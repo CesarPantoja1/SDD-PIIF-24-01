@@ -19,21 +19,37 @@ export interface SemanticDesign {
 }
 
 export function parseApollonDesign(jsonStr: string) {
-  let semantic: SemanticDesign;
+  let semantic: any;
   try {
     semantic = JSON.parse(jsonStr);
   } catch (e) {
     // Attempt to extract JSON if it's wrapped in markdown code blocks
     const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (match) {
+    let extracted = match ? match[1] : null;
+    
+    // If no code blocks, attempt to find the outermost curly braces
+    if (!extracted) {
+      const startIdx = jsonStr.indexOf('{');
+      const endIdx = jsonStr.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        extracted = jsonStr.substring(startIdx, endIdx + 1);
+      }
+    }
+
+    if (extracted) {
       try {
-        semantic = JSON.parse(match[1]);
+        semantic = JSON.parse(extracted);
       } catch (err) {
         throw new Error("Invalid JSON structure returned by AI");
       }
     } else {
       throw new Error("Invalid JSON from AI");
     }
+  }
+
+  // If the JSON is already an Apollon model (e.g. fetched from DB where it was overwritten)
+  if (semantic && semantic.type === "ClassDiagram" && Array.isArray(semantic.nodes)) {
+    return semantic;
   }
 
   const classIdMap = new Map<string, string>();
